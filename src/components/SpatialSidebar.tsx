@@ -29,7 +29,9 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  ChevronDown
+  ChevronDown,
+  Pin,
+  PinOff
 } from 'lucide-react';
 import { PulsarSpatialModule } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -44,6 +46,10 @@ interface SpatialSidebarProps {
   meetingNotesCount: number;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  // Pin: locks the sidebar in its wide (w-64) state on all pages. While
+  // pinned, App passes isCollapsed=false and ignores collapse toggles.
+  isPinned?: boolean;
+  onTogglePin?: () => void;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
   // Phases 1–3: platform access drives the owner-only Admin item and the
@@ -72,6 +78,8 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
   meetingNotesCount,
   isCollapsed,
   onToggleCollapse,
+  isPinned = false,
+  onTogglePin,
   isMobileOpen = false,
   onCloseMobile,
   access,
@@ -212,18 +220,45 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
             )}
           </div>
 
-          {/* Desktop Collapse Toggle */}
-          <button
-            onClick={onToggleCollapse}
-            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
-              isDark 
-                ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-white' 
-                : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600 hover:text-slate-900'
-            }`}
-            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
+          {/* Desktop Pin + Collapse Controls */}
+          <div className="hidden lg:flex items-center gap-1 shrink-0">
+            {/* Pin toggle — shown in the wide state; while pinned the
+                sidebar is locked open, so this is also where you unpin. */}
+            {onTogglePin && !isCollapsed && (
+              <button
+                onClick={onTogglePin}
+                className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
+                  isPinned
+                    ? isDark
+                      ? 'bg-teal-500/20 border-teal-500/50 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.25)]'
+                      : 'bg-teal-100 border-teal-400 text-teal-700'
+                    : isDark 
+                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-white' 
+                      : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600 hover:text-slate-900'
+                }`}
+                title={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                aria-pressed={isPinned}
+              >
+                {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+              </button>
+            )}
+
+            {/* Collapse toggle — unavailable while pinned (locked wide) */}
+            {!isPinned && (
+              <button
+                onClick={onToggleCollapse}
+                className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
+                  isDark 
+                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-white' 
+                    : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600 hover:text-slate-900'
+                }`}
+                title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              >
+                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Navigation Groups List */}

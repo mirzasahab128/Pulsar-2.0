@@ -17,7 +17,8 @@ import {
   Flame,
   Activity,
   Radio,
-  Power
+  Power,
+  Minimize2
 } from 'lucide-react';
 import type { VoiceMode, VoiceCommandHistoryItem } from '../hooks/useVoiceCommandListener';
 import { useTheme } from '../context/ThemeContext';
@@ -65,6 +66,26 @@ export const AlwaysOnVoiceListener = ({
   const isDark = theme === 'dark';
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [showHelpModal, setShowHelpModal] = useState<boolean>(false);
+  // Minimized = floating mic button only (bottom-right). Defaults to
+  // minimized on first load so the panel never covers page content on
+  // arrival; the user's choice persists across reloads.
+  const [isMinimized, setIsMinimized] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem('pulsar_voice_minimized');
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true;
+    }
+  });
+
+  const updateMinimized = (next: boolean) => {
+    setIsMinimized(next);
+    try {
+      localStorage.setItem('pulsar_voice_minimized', String(next));
+    } catch {
+      // storage unavailable (private mode) — state still applies this session
+    }
+  };
 
   const effectiveToggle = onToggleListening ?? onToggleAlwaysOn;
 
@@ -108,10 +129,11 @@ export const AlwaysOnVoiceListener = ({
 
   return (
     <>
-      {/* Floating Need-Based & Always-On Voice Listener HUD (Bottom Left) */}
+      {/* Floating Need-Based & Always-On Voice Listener HUD (Bottom Right, above the mic button) */}
+      {!isMinimized && (
       <aside 
         aria-label="Voice command assistant"
-        className="fixed bottom-4 left-4 z-40 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] select-none transition-all duration-300"
+        className="fixed bottom-24 right-4 z-40 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] select-none transition-all duration-300"
       >
         {/* Main Glassmorphic Capsule */}
         <div className={`p-2.5 sm:p-3 rounded-2xl border shadow-2xl backdrop-blur-2xl transition-all duration-300 ${
@@ -198,9 +220,19 @@ export const AlwaysOnVoiceListener = ({
                 className={`p-1.5 rounded-lg border transition cursor-pointer ${
                   isDark ? 'text-slate-400 hover:text-white border-slate-800 bg-slate-900' : 'text-slate-500 hover:text-slate-900 border-slate-200 bg-slate-50'
                 }`}
-                title={isExpanded ? 'Minimize drawer' : 'Expand drawer'}
+                title={isExpanded ? 'Collapse drawer' : 'Expand drawer'}
               >
                 {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+              </button>
+
+              <button
+                onClick={() => updateMinimized(true)}
+                className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                  isDark ? 'text-slate-400 hover:text-white border-slate-800 bg-slate-900' : 'text-slate-500 hover:text-slate-900 border-slate-200 bg-slate-50'
+                }`}
+                title="Minimize voice assistant to the mic button"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -474,6 +506,56 @@ export const AlwaysOnVoiceListener = ({
 
         </div>
       </aside>
+      )}
+
+      {/* Floating Mic Button (Bottom Right) — the whole voice UI when
+          minimized; toggles the panel open/closed when clicked. */}
+      <button
+        type="button"
+        onClick={() => updateMinimized(!isMinimized)}
+        className={`fixed bottom-4 right-4 z-40 w-14 h-14 rounded-full flex items-center justify-center border shadow-2xl backdrop-blur-xl transition-all duration-300 cursor-pointer transform hover:scale-105 active:scale-95 ${
+          !isMinimized
+            ? isDark
+              ? 'bg-slate-900/95 text-slate-200 border-slate-700'
+              : 'bg-white/95 text-slate-700 border-slate-300'
+            : isListening
+              ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 shadow-emerald-500/40 ring-2 ring-emerald-400/60'
+              : voiceMode === 'need-based'
+                ? isDark
+                  ? 'bg-slate-900/95 text-teal-300 border-teal-500/40 shadow-[0_10px_30px_rgba(20,184,166,0.25)]'
+                  : 'bg-white/95 text-teal-600 border-teal-300'
+                : isAlwaysOn
+                  ? isDark
+                    ? 'bg-slate-900/95 text-amber-400 border-amber-500/40'
+                    : 'bg-white/95 text-amber-600 border-amber-300'
+                  : isDark
+                    ? 'bg-slate-900/95 text-slate-400 border-slate-700'
+                    : 'bg-white/95 text-slate-500 border-slate-300'
+        }`}
+        title={
+          !isMinimized
+            ? 'Minimize voice assistant'
+            : isListening
+              ? 'Listening now — click to open the voice panel'
+              : 'Voice Assistant — click to open the voice panel'
+        }
+        aria-label={!isMinimized ? 'Minimize voice assistant' : 'Open voice assistant panel'}
+      >
+        {!isMinimized ? (
+          <Minimize2 className="w-6 h-6" />
+        ) : isListening ? (
+          <>
+            <Mic className="w-6 h-6 animate-pulse" />
+            <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-30 animate-ping pointer-events-none" />
+          </>
+        ) : voiceMode === 'off' ? (
+          <MicOff className="w-6 h-6" />
+        ) : voiceMode === 'always-on' ? (
+          <Activity className="w-6 h-6 animate-spin" />
+        ) : (
+          <Mic className="w-6 h-6" />
+        )}
+      </button>
 
       {/* Voice Commands Guide Modal */}
       {showHelpModal && (

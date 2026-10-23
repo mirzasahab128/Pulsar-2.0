@@ -107,6 +107,12 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('pulsar_sidebar_collapsed') === 'true';
   });
+  const [isSidebarPinned, setIsSidebarPinned] = useState<boolean>(() => {
+    return localStorage.getItem('pulsar_sidebar_pinned') === 'true';
+  });
+  // A pinned sidebar is locked in its wide state on every page: it
+  // overrides the stored collapsed preference until the user unpins.
+  const effectiveSidebarCollapsed = isSidebarPinned ? false : isSidebarCollapsed;
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false);
@@ -981,7 +987,7 @@ export default function App() {
   return (
     <AuthGate>
       <div className={`relative min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white overflow-x-hidden transition-all duration-300 ${
-      isSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+      effectiveSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
     } bg-[var(--app-bg)] text-[var(--text-primary)] ${
       isDark ? 'quantum-bg-dark' : 'quantum-bg-light'
     }`}>
@@ -1010,11 +1016,18 @@ export default function App() {
         leadsCount={leads.length}
         unreadTasksCount={unreadTasksCount}
         meetingNotesCount={meetingNotes.length}
-        isCollapsed={isSidebarCollapsed}
+        isCollapsed={effectiveSidebarCollapsed}
         onToggleCollapse={() => {
+          if (isSidebarPinned) return; // locked wide while pinned
           const next = !isSidebarCollapsed;
           setIsSidebarCollapsed(next);
           localStorage.setItem('pulsar_sidebar_collapsed', String(next));
+        }}
+        isPinned={isSidebarPinned}
+        onTogglePin={() => {
+          const next = !isSidebarPinned;
+          setIsSidebarPinned(next);
+          localStorage.setItem('pulsar_sidebar_pinned', String(next));
         }}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}

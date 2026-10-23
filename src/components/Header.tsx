@@ -221,20 +221,34 @@ export const Header: React.FC<HeaderProps> = ({
           {/* LEFT: BRAND & ACTIVE NICHE (Desktop, Tablet, Mobile)        */}
           {/* ============================================================ */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 min-w-0">
-            {/* Signature Pulsar Galaxy Pixel Mark */}
-            <div className="relative shrink-0 flex items-center justify-center">
+            {/* Signature Pulsar Galaxy Pixel Mark — brand button: loads the Dashboard */}
+            <button
+              type="button"
+              onClick={() => onSelectTab?.('command_center')}
+              className="relative shrink-0 flex items-center justify-center cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
+              title="Pulsar — go to Dashboard"
+              aria-label="Pulsar — go to Dashboard"
+            >
               <PulsarGalaxy size="md" state="active" glow={true} />
-            </div>
+            </button>
 
             {/* Brand Title & Context */}
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight font-display flex items-center gap-1.5">
-                  <span className={isDark ? 'text-[#F1F5F9]' : 'text-[#172338]'}>Pulsar</span>
-                  <span className="text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500">
-                    Growth OS
+                <button
+                  type="button"
+                  onClick={() => onSelectTab?.('command_center')}
+                  className="cursor-pointer group text-left"
+                  title="Pulsar — go to Dashboard"
+                  aria-label="Pulsar — go to Dashboard"
+                >
+                  <span className="text-base sm:text-lg lg:text-xl font-bold tracking-tight font-display flex items-center gap-1.5">
+                    <span className={`${isDark ? 'text-[#F1F5F9]' : 'text-[#172338]'} group-hover:underline decoration-teal-400/70 underline-offset-4`}>Pulsar</span>
+                    <span className="hidden sm:inline text-[11px] font-mono font-medium text-slate-400 dark:text-slate-500">
+                      Growth OS
+                    </span>
                   </span>
-                </h1>
+                </button>
               </div>
 
               {/* Business Niche Indicator & Library Modal Trigger */}
