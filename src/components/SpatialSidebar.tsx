@@ -200,15 +200,25 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
       >
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="shrink-0 flex items-center justify-center">
+          {/* Brand button: loads the Dashboard (command_center) */}
+          <button
+            type="button"
+            onClick={() => {
+              onSelectModule('command_center');
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className="flex items-center gap-3 overflow-hidden cursor-pointer group text-left"
+            title="Pulsar — go to Dashboard"
+            aria-label="Pulsar — go to Dashboard"
+          >
+            <div className="shrink-0 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
               <PulsarGalaxy size="sm" state="active" glow={true} />
             </div>
 
             {!isCollapsed && (
               <div className="truncate">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm tracking-tight font-display text-slate-900 dark:text-white">
+                  <span className="font-bold text-sm tracking-tight font-display text-slate-900 dark:text-white group-hover:underline decoration-teal-400/70 underline-offset-4">
                     Pulsar
                   </span>
                   <span className="text-[10px] font-mono font-medium text-teal-600 dark:text-teal-400">
@@ -218,7 +228,7 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
                 <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Revenue Intelligence</div>
               </div>
             )}
-          </div>
+          </button>
 
           {/* Desktop Pin + Collapse Controls */}
           <div className="hidden lg:flex items-center gap-1 shrink-0">
