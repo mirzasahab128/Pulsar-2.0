@@ -9,14 +9,23 @@ import {
   EyeOff, 
   AlertCircle, 
   CheckCircle2, 
-  Sun, 
-  Moon, 
+  Sun,
+  Moon,
   ShieldCheck,
-  Stethoscope
+  Stethoscope,
+  Building2,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { submitAccessRequest } from '../services/api';
+
+const PLAN_OPTIONS = [
+  { id: 'trial', name: 'Trial', note: 'Evaluate Pulsar with core features' },
+  { id: 'starter', name: 'Starter', note: 'For small teams getting started' },
+  { id: 'growth', name: 'Growth', note: 'Full platform for scaling teams' }
+] as const;
 
 export const SignInPage: React.FC = () => {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
@@ -26,6 +35,11 @@ export const SignInPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [requestedPlan, setRequestedPlan] = useState<string>('trial');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -48,16 +62,37 @@ export const SignInPage: React.FC = () => {
         await resetPassword(email.trim());
         setSuccessMessage('Password reset link sent to your email. Please check your inbox.');
       } else if (mode === 'signup') {
-        if (!password || password.length < 6) {
-          throw new Error('Password must be at least 6 characters.');
+        if (!displayName.trim()) {
+          throw new Error('Please enter your full name.');
+        }
+        if (!organization.trim()) {
+          throw new Error('Please enter your organization.');
+        }
+        if (!password || password.length < 8) {
+          throw new Error('Password must be at least 8 characters.');
+        }
+        if (password !== confirmPassword) {
+          throw new Error('Passwords do not match. Please re-enter them.');
+        }
+        if (!termsAccepted) {
+          throw new Error('Please accept the Terms of Service and Privacy Policy to request access.');
         }
         await signUpWithEmail(email.trim(), password, displayName.trim());
-        setSuccessMessage('Account created! Verification email has been sent.');
+        // Deliver the request details (organization, requested plan, terms
+        // acceptance) to the platform record. Never throws: if the API is
+        // unreachable the details are stashed and retried on a later
+        // sign-in, and the account itself already exists either way.
+        await submitAccessRequest({
+          organization: organization.trim(),
+          requestedPlanId: requestedPlan,
+          termsAcceptedAt: new Date().toISOString()
+        });
+        setSuccessMessage('Access requested — your account is now pending administrator approval. You can sign in at any time to check your status.');
       } else {
         if (!password) {
           throw new Error('Please enter your password.');
         }
-        await signInWithEmail(email.trim(), password);
+        await signInWithEmail(email.trim(), password, rememberMe);
       }
     } catch (err: any) {
       console.error('Sign-in error:', err);
@@ -67,7 +102,7 @@ export const SignInPage: React.FC = () => {
       } else if (code === 'auth/email-already-in-use') {
         setErrorMessage('An account with this email already exists. Please sign in instead.');
       } else if (code === 'auth/weak-password') {
-        setErrorMessage('Password is too weak. Please use at least 6 characters.');
+        setErrorMessage('Password is too weak. Please use at least 8 characters.');
       } else if (code === 'auth/popup-closed-by-user') {
         setErrorMessage('Sign-in window closed before authentication finished.');
       } else if (code === 'auth/network-request-failed') {
@@ -154,7 +189,7 @@ export const SignInPage: React.FC = () => {
                     : 'text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)]'
                 }`}
               >
-                Create Account
+                Request Access
               </button>
             </div>
           )}
@@ -258,6 +293,56 @@ export const SignInPage: React.FC = () => {
               </div>
             </div>
 
+            {mode === 'signup' && (
+              <>
+                <div>
+                  <label
+                    htmlFor="organization"
+                    className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
+                  >
+                    Organization
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
+                    <input
+                      id="organization"
+                      type="text"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                      placeholder="e.g. RevCycle Health System"
+                      required
+                      disabled={isLoading}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="requestedPlan"
+                    className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
+                  >
+                    Requested Plan
+                  </label>
+                  <div className="relative">
+                    <ClipboardList className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)] pointer-events-none" />
+                    <select
+                      id="requestedPlan"
+                      value={requestedPlan}
+                      onChange={(e) => setRequestedPlan(e.target.value)}
+                      disabled={isLoading}
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all appearance-none"
+                    >
+                      {PLAN_OPTIONS.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} — {p.note}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-[var(--lg-text-muted)]">An administrator reviews every request and confirms the plan at approval.</p>
+                </div>
+              </>
+            )}
+
             {mode !== 'forgot' && (
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -302,6 +387,58 @@ export const SignInPage: React.FC = () => {
               </div>
             )}
 
+            {mode === 'signup' && (
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
+                >
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                    required
+                    disabled={isLoading}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px] text-[var(--lg-text-muted)]">Min 8 characters. Use a strong, unique password.</p>
+              </div>
+            )}
+
+            {mode === 'signin' && (
+              <label className="flex items-center gap-2.5 text-xs text-[var(--lg-text-secondary)] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
+                  className="w-4 h-4 rounded accent-emerald-500"
+                />
+                Remember this workstation
+              </label>
+            )}
+
+            {mode === 'signup' && (
+              <label className="flex items-start gap-2.5 text-xs text-[var(--lg-text-secondary)] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  disabled={isLoading}
+                  className="w-4 h-4 mt-0.5 rounded accent-emerald-500"
+                />
+                <span>I accept the Terms of Service and Privacy Policy, and understand that accounts require administrator approval.</span>
+              </label>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -316,7 +453,7 @@ export const SignInPage: React.FC = () => {
                 <span>Send Password Reset Link</span>
               ) : mode === 'signup' ? (
                 <>
-                  <span>Create Account</span>
+                  <span>Submit Access Request</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               ) : (

@@ -68,6 +68,18 @@ export interface PlatformUser {
   rejectionNote?: string;
   invitedBy?: string;
   lastSignInAt?: string;
+  /** Access Gateway: organization the user gave on the Request Access
+   *  form (also mirrored onto accessRequest). Free-text, self-reported. */
+  organization?: string;
+  /** Access Gateway: details submitted with the Request Access form.
+   *  requestedPlanId is a preference the admin sees at approval time —
+   *  it never grants anything by itself; approval still assigns the plan. */
+  accessRequest?: {
+    organization: string;
+    requestedPlanId: string | null;
+    termsAcceptedAt: string;
+    submittedAt: string;
+  };
 }
 
 /** Tombstone left when an admin deletes a user record. Without it, a
@@ -382,6 +394,54 @@ export function ensureUserRecord(
   };
   state.users[claims.uid] = user;
   return { user, created: true };
+}
+
+export interface AccessRequestInput {
+  organization: string;
+  requestedPlanId?: string | null;
+  termsAcceptedAt: string;
+}
+
+/**
+ * Access Gateway: record the details a user submitted with the Request
+ * Access form (organization, requested plan, terms acceptance). Allowed
+ * for pending_approval users — completing the request is the point of the
+ * pending state — and harmless for active users (it just updates their
+ * self-reported organization). The requested plan is validated against
+ * the plan catalogue and stored as a preference only.
+ */
+export function submitAccessRequest(
+  state: PlatformState,
+  user: PlatformUser,
+  input: AccessRequestInput
+): { ok: true } | { ok: false; error: string } {
+  const organization = (input.organization || '').trim();
+  if (!organization) return { ok: false, error: 'ORGANIZATION_REQUIRED' };
+  if (organization.length > 120) return { ok: false, error: 'ORGANIZATION_TOO_LONG' };
+  let requestedPlanId: string | null = null;
+  if (input.requestedPlanId) {
+    if (!state.plans[input.requestedPlanId]) return { ok: false, error: 'UNKNOWN_PLAN' };
+    requestedPlanId = input.requestedPlanId;
+  }
+  if (!input.termsAcceptedAt || Number.isNaN(Date.parse(input.termsAcceptedAt))) {
+    return { ok: false, error: 'TERMS_ACCEPTANCE_REQUIRED' };
+  }
+  const now = new Date().toISOString();
+  user.organization = organization;
+  user.accessRequest = {
+    organization,
+    requestedPlanId,
+    termsAcceptedAt: input.termsAcceptedAt,
+    submittedAt: now
+  };
+  writeAudit(
+    state,
+    user.email,
+    'user.access_request',
+    user.email,
+    `Access request details: org="${organization}", requestedPlan=${requestedPlanId || 'none'}`
+  );
+  return { ok: true };
 }
 
 export function defaultPlan(state: PlatformState): Plan | null {

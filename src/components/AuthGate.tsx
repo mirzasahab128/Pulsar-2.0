@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { SignInPage } from './SignInPage';
+import { retryStashedAccessRequest } from '../services/api';
 import { Mail, CheckCircle2, AlertCircle, RefreshCw, Clock, ShieldOff, LogOut } from 'lucide-react';
 
 export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser, isLoading, resendVerification, access, signOut } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState<string | null>(null);
+
+  // Access Gateway: if this device still holds an undelivered Request
+  // Access submission (e.g. the API was unreachable at signup), retry
+  // delivering it whenever the pending screen is shown.
+  useEffect(() => {
+    if (access?.status === 'pending_approval') {
+      void retryStashedAccessRequest();
+    }
+  }, [access?.status]);
 
   if (isLoading) {
     return (
@@ -39,8 +49,9 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
         <h1 className="text-lg font-bold mb-2">Your account is awaiting approval</h1>
         <p className="text-sm text-[var(--lg-text-secondary)] max-w-md text-center mb-6">
-          Thanks for signing up. A Pulsar administrator needs to approve your account and
-          assign a plan before you can access the workspace. You'll get an email once you're approved.
+          Thanks for requesting access. A Pulsar administrator needs to approve your account and
+          assign a plan before you can access the workspace. Sign back in to check your status —
+          once approved, this screen clears automatically.
         </p>
         <button
           type="button"

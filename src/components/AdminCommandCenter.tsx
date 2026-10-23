@@ -534,10 +534,18 @@ export const AdminCommandCenter: React.FC = () => {
               <div>
                 <div className="text-xs font-bold">{u.displayName} <span className="font-normal text-slate-500">· {u.email}</span></div>
                 <div className="text-[11px] text-slate-500">Signed up {new Date(u.createdAt).toLocaleString()}</div>
+                {(u.accessRequest || u.organization) && (
+                  <div className="text-[11px] text-slate-500">
+                    Organization: <span className="font-semibold">{u.accessRequest?.organization || u.organization}</span>
+                    {u.accessRequest?.requestedPlanId && (
+                      <> · Requested plan: <span className="font-semibold">{plans.find(p => p.id === u.accessRequest?.requestedPlanId)?.name || u.accessRequest.requestedPlanId}</span></>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <select
-                  value={approvalPlan[u.uid] || defaultPlanId}
+                  value={approvalPlan[u.uid] || u.accessRequest?.requestedPlanId || defaultPlanId}
                   onChange={e => setApprovalPlan(prev => ({ ...prev, [u.uid]: e.target.value }))}
                   className={inputCls}
                 >
@@ -545,7 +553,7 @@ export const AdminCommandCenter: React.FC = () => {
                 </select>
                 <button
                   onClick={() => runAction(async () => {
-                    const res = await apiService.approveSignup(u.uid, approvalPlan[u.uid] || defaultPlanId || undefined);
+                    const res = await apiService.approveSignup(u.uid, approvalPlan[u.uid] || u.accessRequest?.requestedPlanId || defaultPlanId || undefined);
                     if (res.approvalEmail.status === 'not_configured') {
                       setNotice(`Approved ${u.email}, but the approval email was NOT sent — mailer not configured (RESEND_API_KEY missing).`);
                     }

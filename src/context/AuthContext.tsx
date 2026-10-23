@@ -38,7 +38,7 @@ interface AuthContextType {
   openAuthModal: (tab?: 'signin' | 'signup', targetRole?: UserRole) => void;
   closeAuthModal: () => void;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signInWithEmail: (email: string, pass: string, remember?: boolean) => Promise<void>;
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   resendVerification: () => Promise<void>;
@@ -171,8 +171,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthModalOpen(false);
   };
 
-  const handleSignInWithEmail = async (email: string, pass: string) => {
-    const { profile: userProfile } = await fbSignInWithEmail(email, pass);
+  const handleSignInWithEmail = async (email: string, pass: string, remember: boolean = true) => {
+    const { profile: userProfile } = await fbSignInWithEmail(email, pass, remember);
     setProfile(userProfile);
     setIsAuthModalOpen(false);
   };

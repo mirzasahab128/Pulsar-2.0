@@ -19,6 +19,7 @@ import {
   getPlatformState,
   persistPlatform,
   ensureUserRecord,
+  submitAccessRequest,
   resolveAccess,
   findUser,
   defaultPlan,
@@ -1621,6 +1622,30 @@ app.get('/api/me/access', ah(async (req, res) => {
   ensureUserRecord(state, actorOf(req));
   persistPlatform();
   return res.json({ success: true, access: resolveAccess(state, req.user) });
+}));
+
+// Access Gateway: the Request Access form submits its details here right
+// after the Firebase account is created. Reachable while the account is
+// pending_approval (that is the normal state at submit time); the details
+// land on the platform record for the admin's Signup Approvals queue.
+app.post('/api/me/access-request', ah(async (req, res) => {
+  const state = getPlatformState();
+  const { user } = ensureUserRecord(state, actorOf(req));
+  const body = (req.body || {}) as {
+    organization?: string;
+    requestedPlanId?: string | null;
+    termsAcceptedAt?: string;
+  };
+  const result = submitAccessRequest(state, user, {
+    organization: typeof body.organization === 'string' ? body.organization : '',
+    requestedPlanId: typeof body.requestedPlanId === 'string' ? body.requestedPlanId : null,
+    termsAcceptedAt: typeof body.termsAcceptedAt === 'string' ? body.termsAcceptedAt : ''
+  });
+  if (!result.ok) {
+    return res.status(400).json({ success: false, error: result.error });
+  }
+  persistPlatform();
+  return res.json({ success: true, access: resolveAccess(state, req.user), user });
 }));
 
 // --- Admin: users -----------------------------------------------------------

@@ -18,6 +18,7 @@ const {
   isMasterAdminEmail,
   validateMasterAdminUpdate,
   ensureUserRecord,
+  submitAccessRequest,
   findUser,
   effectiveFeatures,
   markUserDeleted,
@@ -394,5 +395,59 @@ describe('Admin Command Center: delete tombstones', () => {
     const verdict = featureGateDecision(state, decoded(), 'npi_search');
     assert.equal(verdict.allow, false);
     if (!verdict.allow) assert.equal(verdict.body.error, 'ACCOUNT_NOT_ACTIVE');
+  });
+});
+
+describe('Access Gateway: submitAccessRequest', () => {
+  const TERMS = new Date().toISOString();
+
+  it('stores organization + requested plan on a pending user and audits it', () => {
+    const state = emptyPlatformState();
+    const { user } = ensureUserRecord(state, { uid: 'user-9', email: 'new@practice.com' });
+    assert.equal(user.status, 'pending_approval');
+    const res = submitAccessRequest(state, user, {
+      organization: '  RevCycle Health System  ',
+      requestedPlanId: 'growth',
+      termsAcceptedAt: TERMS
+    });
+    assert.deepEqual(res, { ok: true });
+    assert.equal(user.organization, 'RevCycle Health System');
+    assert.equal(user.accessRequest?.organization, 'RevCycle Health System');
+    assert.equal(user.accessRequest?.requestedPlanId, 'growth');
+    assert.equal(user.accessRequest?.termsAcceptedAt, TERMS);
+    // The request alone grants nothing: still pending, still gated.
+    assert.equal(user.status, 'pending_approval');
+    assert.equal(user.planId, null);
+    assert.ok(state.audit.some(a => a.action === 'user.access_request'));
+  });
+
+  it('rejects an empty organization, an unknown plan, and missing terms acceptance', () => {
+    const state = emptyPlatformState();
+    const { user } = ensureUserRecord(state, { uid: 'user-9', email: 'new@practice.com' });
+    assert.deepEqual(
+      submitAccessRequest(state, user, { organization: '   ', requestedPlanId: null, termsAcceptedAt: TERMS }),
+      { ok: false, error: 'ORGANIZATION_REQUIRED' }
+    );
+    assert.deepEqual(
+      submitAccessRequest(state, user, { organization: 'Org', requestedPlanId: 'platinum', termsAcceptedAt: TERMS }),
+      { ok: false, error: 'UNKNOWN_PLAN' }
+    );
+    assert.deepEqual(
+      submitAccessRequest(state, user, { organization: 'Org', requestedPlanId: null, termsAcceptedAt: '' }),
+      { ok: false, error: 'TERMS_ACCEPTANCE_REQUIRED' }
+    );
+    assert.equal(user.accessRequest, undefined);
+  });
+
+  it('accepts a request with no plan preference (null)', () => {
+    const state = emptyPlatformState();
+    const { user } = ensureUserRecord(state, { uid: 'user-9', email: 'new@practice.com' });
+    const res = submitAccessRequest(state, user, {
+      organization: 'Solo Practice LLC',
+      requestedPlanId: null,
+      termsAcceptedAt: TERMS
+    });
+    assert.deepEqual(res, { ok: true });
+    assert.equal(user.accessRequest?.requestedPlanId, null);
   });
 });

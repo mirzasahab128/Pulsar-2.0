@@ -10,7 +10,10 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   onAuthStateChanged,
-  User 
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  User
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -277,9 +280,16 @@ export const signInWithGoogle = async (): Promise<{ user: User; profile: UserPro
   }
 };
 
-// Sign in with Email and Password
-export const signInWithEmail = async (email: string, pass: string): Promise<{ user: User; profile: UserProfileData }> => {
+// Sign in with Email and Password. `remember` drives the "Remember this
+// workstation" choice on the gateway: local persistence keeps the session
+// on this machine; session persistence ends it with the browser session.
+export const signInWithEmail = async (email: string, pass: string, remember: boolean = true): Promise<{ user: User; profile: UserProfileData }> => {
   try {
+    try {
+      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+    } catch (e) {
+      console.warn('Could not set auth persistence:', e);
+    }
     const cred = await signInWithEmailAndPassword(auth, email, pass);
     const user = cred.user;
     

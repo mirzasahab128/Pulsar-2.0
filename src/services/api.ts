@@ -939,6 +939,71 @@ export interface PlatformUserRecord {
   rejectionNote?: string;
   invitedBy?: string;
   lastSignInAt?: string;
+  /** Access Gateway: self-reported organization from the Request Access form. */
+  organization?: string;
+  /** Access Gateway: Request Access form details (requested plan is a
+   *  preference for the approving admin, never a grant). */
+  accessRequest?: {
+    organization: string;
+    requestedPlanId: string | null;
+    termsAcceptedAt: string;
+    submittedAt: string;
+  };
+}
+
+export interface AccessRequestDetails {
+  organization: string;
+  requestedPlanId: string | null;
+  termsAcceptedAt: string;
+}
+
+const ACCESS_REQUEST_STASH_PREFIX = 'pulsar_access_request_';
+
+/**
+ * Access Gateway: send the Request Access form details to the server.
+ * Never throws — if the API is unreachable (e.g. the server is not
+ * deployed yet) the details are stashed in localStorage and retried by
+ * retryStashedAccessRequest() on a later sign-in, so a signup is never
+ * lost and the form never reports a false failure after the account
+ * itself was created successfully.
+ */
+export async function submitAccessRequest(details: AccessRequestDetails): Promise<boolean> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/me/access-request', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(details)
+    });
+    if (res.ok) {
+      const uid = auth.currentUser?.uid;
+      if (uid) localStorage.removeItem(ACCESS_REQUEST_STASH_PREFIX + uid);
+      return true;
+    }
+    throw new Error(`access-request failed: ${res.status}`);
+  } catch (e) {
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      try { localStorage.setItem(ACCESS_REQUEST_STASH_PREFIX + uid, JSON.stringify(details)); } catch { /* storage full/blocked */ }
+    }
+    console.warn('Access request details will be delivered on a later sign-in:', e);
+    return false;
+  }
+}
+
+/** Retry a stashed access-request delivery (called when a pending user
+ *  reaches the awaiting-approval screen). Silent no-op when nothing is
+ *  stashed or the user is signed out. */
+export async function retryStashedAccessRequest(): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return;
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(ACCESS_REQUEST_STASH_PREFIX + uid); } catch { /* ignore */ }
+  if (!raw) return;
+  try {
+    const details = JSON.parse(raw) as AccessRequestDetails;
+    await submitAccessRequest(details);
+  } catch { /* keep the stash for the next attempt */ }
 }
 
 export interface AccessInfo {
