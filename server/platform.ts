@@ -57,12 +57,32 @@ export interface PlatformUser {
   role: PlatformRole;
   planId: string | null;
   status: PlatformStatus;
+  /** Admin Command Center: per-user feature overrides applied on top of
+   *  the plan — true grants an area the plan lacks, false revokes one the
+   *  plan includes. Absent key = follow the plan. Effective access is
+   *  computed server-side (see effectiveFeatures). */
+  featureOverrides?: Record<string, boolean>;
   createdAt: string;
   approvedBy?: string;
   approvedAt?: string;
   rejectionNote?: string;
   invitedBy?: string;
   lastSignInAt?: string;
+}
+
+/** Tombstone left when an admin deletes a user record. Without it, a
+ *  deleted user (whose Firebase Auth account cannot be deleted from here
+ *  — see DELETE /api/admin/users/:uid) would fall under the "no platform
+ *  record = grandfathered" migration rule and keep API access until their
+ *  next /api/me/access call recreated a pending record. Gate decisions
+ *  consult tombstones first, so a deleted uid/email is rejected
+ *  immediately. The tombstone is cleared if the person is re-created by
+ *  an admin or signs up again (they then start over as pending_approval). */
+export interface DeletedUserTombstone {
+  uid: string;
+  email: string;
+  deletedAt: string;
+  deletedBy: string;
 }
 
 export interface PlanLimits {
@@ -147,6 +167,7 @@ export interface PlatformState {
   audit: AuditEntry[];
   usage: Record<string, UsageCounters>;
   snapshots: Record<string, WorkspaceSnapshot>;
+  deletedUsers: DeletedUserTombstone[];
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +216,8 @@ export function emptyPlatformState(): PlatformState {
     masterAdminEmails: [],
     audit: [],
     usage: {},
-    snapshots: {}
+    snapshots: {},
+    deletedUsers: []
   };
 }
 
@@ -210,7 +232,11 @@ export function getPlatformState(): PlatformState {
     store.platform = emptyPlatformState();
     saveStore(store);
   }
-  return store.platform as PlatformState;
+  const state = store.platform as PlatformState;
+  // Migration: states persisted before the Admin Command Center have no
+  // tombstone list.
+  if (!Array.isArray(state.deletedUsers)) state.deletedUsers = [];
+  return state;
 }
 
 export function persistPlatform(): void {
@@ -276,6 +302,35 @@ export function findUser(state: PlatformState, uid?: string, email?: string): Pl
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Deleted-user tombstones (Admin Command Center delete semantics)
+// ---------------------------------------------------------------------------
+
+export function isDeletedUser(state: PlatformState, uid?: string, email?: string): boolean {
+  for (const t of state.deletedUsers || []) {
+    if (uid && t.uid === uid) return true;
+    if (email && normalizeEmail(t.email) === normalizeEmail(email)) return true;
+  }
+  return false;
+}
+
+export function markUserDeleted(state: PlatformState, user: PlatformUser, deletedBy: string): void {
+  clearDeletedUser(state, user.uid, user.email);
+  state.deletedUsers.push({
+    uid: user.uid,
+    email: user.email,
+    deletedAt: new Date().toISOString(),
+    deletedBy
+  });
+}
+
+export function clearDeletedUser(state: PlatformState, uid?: string, email?: string): void {
+  if (!Array.isArray(state.deletedUsers)) state.deletedUsers = [];
+  state.deletedUsers = state.deletedUsers.filter(t =>
+    !(uid && t.uid === uid) && !(email && normalizeEmail(t.email) === normalizeEmail(email))
+  );
+}
+
 /**
  * Ensure a platform record exists for an authenticated user (prompt §3a:
  * "on sign-in, the server ensures a users doc exists"). A record an admin
@@ -290,6 +345,10 @@ export function ensureUserRecord(
 ): { user: PlatformUser; created: boolean } {
   const now = new Date().toISOString();
   const master = isMasterAdminEmail(state, claims.email);
+  // A record (re)appearing for this identity supersedes any delete
+  // tombstone: the person starts over under the normal rules (a fresh
+  // signup lands in pending_approval with zero access).
+  clearDeletedUser(state, claims.uid, claims.email);
 
   const existing = findUser(state, claims.uid, claims.email);
   if (existing) {
@@ -317,6 +376,7 @@ export function ensureUserRecord(
     role: master ? 'master_admin' : 'user',
     planId: null,
     status: master ? 'active' : 'pending_approval',
+    featureOverrides: {},
     createdAt: now,
     lastSignInAt: now
   };
@@ -340,10 +400,38 @@ export interface AccessInfo {
   status: PlatformStatus;
   planId: string | null;
   plan: Plan | null;
+  /** Effective features: the plan's features modified by the user's
+   *  per-user overrides (Admin Command Center). This is the ONLY feature
+   *  map clients and gates should consult. */
   features: Record<string, boolean>;
+  /** The raw per-user overrides behind `features` ({} when none). */
+  featureOverrides: Record<string, boolean>;
   limits: PlanLimits | null;
   usage: UsageCounters;
   isMasterAdmin: boolean;
+}
+
+/**
+ * Effective feature set for a user: start from the plan (all-off when the
+ * user has no plan), then apply per-user overrides — `true` grants an area
+ * the plan lacks, `false` revokes one the plan includes. Pure; the single
+ * place this merge is defined so gates, /api/me/access, and the sequence
+ * engine can never drift apart.
+ */
+export function effectiveFeatures(
+  plan: Plan | null,
+  overrides?: Record<string, boolean> | null
+): Record<string, boolean> {
+  const result = featureMap([]);
+  if (plan) {
+    for (const key of FEATURE_KEYS) result[key] = plan.features?.[key] === true;
+  }
+  if (overrides) {
+    for (const key of FEATURE_KEYS) {
+      if (typeof overrides[key] === 'boolean') result[key] = overrides[key];
+    }
+  }
+  return result;
 }
 
 function currentMonth(): string {
@@ -387,6 +475,7 @@ export function resolveAccess(state: PlatformState, decoded: DecodedFirebaseToke
       planId: record?.planId ?? null,
       plan: record?.planId ? state.plans[record.planId] ?? null : null,
       features: featureMap([...FEATURE_KEYS]),
+      featureOverrides: { ...(record?.featureOverrides ?? {}) },
       limits: null, // master admins bypass all plan gates (prompt §3e)
       usage,
       isMasterAdmin: true
@@ -401,7 +490,8 @@ export function resolveAccess(state: PlatformState, decoded: DecodedFirebaseToke
     status: record?.status ?? 'active', // no record = pre-platform user (see header)
     planId: record?.planId ?? null,
     plan,
-    features: plan ? { ...featureMap([]), ...plan.features } : featureMap([]),
+    features: effectiveFeatures(plan, record?.featureOverrides),
+    featureOverrides: { ...(record?.featureOverrides ?? {}) },
     limits: plan ? plan.limits : null,
     usage,
     isMasterAdmin: false
@@ -422,7 +512,19 @@ export function featureGateDecision(
   feature: FeatureKey
 ): GateVerdict {
   const record = findUser(state, decoded.uid, decoded.email);
-  if (!record) return { allow: true };
+  if (!record) {
+    // A deleted user's record is gone, but their tombstone keeps them
+    // rejected (Admin Command Center delete semantics) instead of falling
+    // under the grandfather rule below.
+    if (isDeletedUser(state, decoded.uid, decoded.email)) {
+      return {
+        allow: false,
+        status: 403,
+        body: { success: false, error: 'ACCOUNT_NOT_ACTIVE', status: 'deleted' }
+      };
+    }
+    return { allow: true };
+  }
   if (record.status !== 'active') {
     return {
       allow: false,
@@ -433,7 +535,7 @@ export function featureGateDecision(
   const master = decoded.email_verified === true && isMasterAdminEmail(state, decoded.email);
   if (master) return { allow: true };
   const plan = record.planId ? state.plans[record.planId] : null;
-  if (!plan || plan.features?.[feature] !== true) {
+  if (effectiveFeatures(plan, record.featureOverrides)[feature] !== true) {
     return {
       allow: false,
       status: 403,
@@ -586,6 +688,10 @@ export function requireActiveAccount(req: Request, res: Response, next: NextFunc
   const record = findUser(state, user.uid, user.email);
   if (record && record.status !== 'active') {
     res.status(403).json({ success: false, error: 'ACCOUNT_NOT_ACTIVE', status: record.status });
+    return;
+  }
+  if (!record && isDeletedUser(state, user.uid, user.email)) {
+    res.status(403).json({ success: false, error: 'ACCOUNT_NOT_ACTIVE', status: 'deleted' });
     return;
   }
   next();

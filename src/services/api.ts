@@ -507,7 +507,7 @@ All ${params.stats.warmTransfersBridged} connected calls were immediately bridge
   },
 
   // -------------------------------------------------------------------------
-  // Phases 1–3 — Platform access, Admin Access Control Center, Dashboard stats
+  // Phases 1–3 — Platform access, Admin Command Center, Dashboard stats
   // -------------------------------------------------------------------------
 
   /** Fetch the signed-in user's platform access (also ensures the server-side
@@ -640,6 +640,43 @@ All ${params.stats.warmTransfersBridged} connected calls were immediately bridge
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load audit log');
     return data.entries as AuditLogEntry[];
+  },
+
+  /** Admin Command Center — platform at a glance. */
+  async getAdminOverview(): Promise<AdminOverview> {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/admin/overview', { headers });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to load overview');
+    return data.overview as AdminOverview;
+  },
+
+  /** Set per-user feature overrides: true = grant, false = revoke,
+   *  null = clear (fall back to the plan). Returns the updated record. */
+  async setUserFeatureOverrides(uid: string, overrides: Record<string, boolean | null>): Promise<PlatformUserRecord> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(uid)}/access`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(overrides)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to update access');
+    return data.user as PlatformUserRecord;
+  },
+
+  /** Ask the server to email the user a password-reset request notice.
+   *  The returned status is the mailer's honest state (never faked). */
+  async triggerUserPasswordReset(uid: string): Promise<{ status: string; error?: string }> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`/api/admin/users/${encodeURIComponent(uid)}/password-reset`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to trigger password reset');
+    return data.reset as { status: string; error?: string };
   },
 
   /** Sync the workspace's real records (sections merge server-side). */
@@ -883,7 +920,7 @@ export interface PlatformPlan {
   name: string;
   priceNote: string;
   features: Record<string, boolean>;
-  limits: { leadsPerMonth: number; campaignsActive: number; seats: number; callsPerMonth: number };
+  limits: { leadsPerMonth: number; campaignsActive: number; seats: number; callsPerMonth: number; sendsPerMonth?: number };
   isDefault: boolean;
 }
 
@@ -894,6 +931,8 @@ export interface PlatformUserRecord {
   role: 'master_admin' | 'admin' | 'user';
   planId: string | null;
   status: 'pending_approval' | 'active' | 'disabled';
+  /** Per-user feature overrides on top of the plan (Admin Command Center). */
+  featureOverrides?: Record<string, boolean>;
   createdAt: string;
   approvedBy?: string;
   approvedAt?: string;
@@ -909,10 +948,22 @@ export interface AccessInfo {
   status: 'pending_approval' | 'active' | 'disabled';
   planId: string | null;
   plan: PlatformPlan | null;
+  /** Effective features (plan modified by per-user overrides), computed server-side. */
   features: Record<string, boolean>;
+  featureOverrides: Record<string, boolean>;
   limits: PlatformPlan['limits'] | null;
   usage: { month: string; leads: number; calls: number };
   isMasterAdmin: boolean;
+}
+
+export interface AdminOverview {
+  totalUsers: number;
+  byStatus: Record<string, number>;
+  byPlan: Record<string, number>;
+  pendingApprovals: number;
+  masterAdminCount: number;
+  envFallbackActive: boolean;
+  recentAudit: AuditLogEntry[];
 }
 
 export interface AuditLogEntry {

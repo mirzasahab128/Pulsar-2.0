@@ -25,6 +25,8 @@ import {
   isMasterAdminEmail,
   effectiveMasterAdmins,
   validateMasterAdminUpdate,
+  markUserDeleted,
+  clearDeletedUser,
   writeAudit,
   recordUsage,
   requireMasterAdmin,
@@ -1658,10 +1660,14 @@ app.post('/api/admin/users', requireMasterAdmin, ah(async (req, res) => {
     role: assignedRole as PlatformUser['role'],
     planId: plan ? plan.id : null,
     status: 'active',
+    featureOverrides: {},
     createdAt: new Date().toISOString(),
     invitedBy: actorOf(req).email
   };
   state.users[newUser.uid] = newUser;
+  // Re-creating a previously deleted email revives the identity under the
+  // new record; the delete tombstone no longer applies.
+  clearDeletedUser(state, undefined, normalizedEmail);
   writeAudit(state, actorOf(req).email, 'user.create', newUser.email,
     `Created user on plan ${newUser.planId || 'none'} with role ${newUser.role}`);
   persistPlatform();
@@ -1705,6 +1711,11 @@ app.patch('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
     if (!['admin', 'user'].includes(role)) {
       return badRequest(res, 'role must be "admin" or "user" (master_admin is managed via the master-admin list)');
     }
+    if (target.role === 'master_admin') {
+      // Demoting a master admin happens by removing their address in the
+      // Master Control tab (guarded there), never by editing this record.
+      return res.status(409).json({ success: false, error: 'Master admin role is managed via the master-admin list; it cannot be changed here.' });
+    }
     target.role = role;
     changes.push(`role=${role}`);
   }
@@ -1714,6 +1725,10 @@ app.patch('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
     }
     if (status === 'disabled' && isSelf) {
       return res.status(409).json({ success: false, error: 'You cannot disable your own account.' });
+    }
+    if (status === 'disabled' && isMasterAdminEmail(state, target.email)
+      && effectiveMasterAdmins(state).length <= 1) {
+      return res.status(409).json({ success: false, error: 'The last master admin cannot be disabled.' });
     }
     target.status = status;
     changes.push(`status=${status}`);
@@ -1737,12 +1752,97 @@ app.delete('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
   if (target.uid === actor.uid || target.email.toLowerCase() === actor.email.toLowerCase()) {
     return res.status(409).json({ success: false, error: 'You cannot delete your own account.' });
   }
+  if (isMasterAdminEmail(state, target.email) && effectiveMasterAdmins(state).length <= 1) {
+    return res.status(409).json({ success: false, error: 'The last master admin cannot be deleted.' });
+  }
   delete state.users[target.uid];
+  // Tombstone: the deleted identity is rejected by the platform gates
+  // immediately, even though its (undeletable-from-here) Firebase Auth
+  // account could otherwise still present a valid token.
+  markUserDeleted(state, target, actor.email);
   writeAudit(state, actor.email, 'user.delete', target.email, 'Platform record deleted');
   persistPlatform();
   // Honest scope: without the Firebase Admin SDK the underlying Firebase
   // Auth account cannot be deleted from here; only the platform record is.
   return res.json({ success: true, platformRecordDeleted: true, authAccountDeleted: false });
+}));
+
+// --- Admin: per-user feature overrides (Admin Command Center) ----------------
+// Body: a map of feature key -> true (grant an area the plan lacks),
+// false (revoke an area the plan includes), or null (clear the override
+// and fall back to the plan). Effective on the user's next request.
+app.put('/api/admin/users/:uid/access', requireMasterAdmin, ah(async (req, res) => {
+  const body = req.body;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return badRequest(res, 'Body must be an object mapping feature keys to true, false, or null');
+  }
+  const entries = Object.entries(body);
+  if (entries.length === 0) return badRequest(res, 'No feature overrides provided');
+  for (const [key, value] of entries) {
+    if (!FEATURE_KEYS.includes(key as any)) return badRequest(res, `Unknown feature key: ${key}`);
+    if (value !== null && typeof value !== 'boolean') {
+      return badRequest(res, `Override for "${key}" must be true, false, or null`);
+    }
+  }
+  const state = getPlatformState();
+  const target = state.users[req.params.uid];
+  if (!target) return res.status(404).json({ success: false, error: 'User not found' });
+
+  const overrides: Record<string, boolean> = { ...(target.featureOverrides ?? {}) };
+  const plan = target.planId ? state.plans[target.planId] : null;
+  const changes: string[] = [];
+  for (const [key, value] of entries) {
+    const planDefault = plan?.features?.[key] === true;
+    if (value === null) {
+      if (key in overrides) {
+        delete overrides[key];
+        changes.push(`${key} override cleared (plan default ${planDefault ? 'on' : 'off'})`);
+      } else {
+        changes.push(`${key} already on plan default (${planDefault ? 'on' : 'off'})`);
+      }
+    } else if (value === true) {
+      overrides[key] = true;
+      changes.push(`${key} granted`);
+    } else {
+      overrides[key] = false;
+      changes.push(`${key} revoked`);
+    }
+  }
+  target.featureOverrides = overrides;
+  writeAudit(state, actorOf(req).email, 'user.access_update', target.email, changes.join('; '));
+  persistPlatform();
+  return res.json({ success: true, user: target });
+}));
+
+// --- Admin: password reset trigger (Admin Command Center) --------------------
+// The server has no Firebase Admin SDK, so it cannot mint Firebase's own
+// reset link; consistent with the sign-in page's forgot-password flow
+// (which uses Firebase's sendPasswordResetEmail client-side), this action
+// emails the user through the Resend mailer telling them a reset was
+// requested and how to complete it. The mail outcome is reported honestly
+// (sent / not_configured / failed) — never faked.
+app.post('/api/admin/users/:uid/password-reset', requireMasterAdmin, ah(async (req, res) => {
+  const state = getPlatformState();
+  const target = state.users[req.params.uid];
+  if (!target) return res.status(404).json({ success: false, error: 'User not found' });
+  const actor = actorOf(req);
+
+  const mail = await sendEmailViaResend({
+    to: target.email,
+    subject: 'Reset your Pulsar password',
+    html: `<p>Hello ${target.displayName},</p>
+<p>An administrator has requested a password reset for your Pulsar account.</p>
+<p>To set a new password, open the Pulsar sign-in page, choose <strong>Forgot password</strong>, and enter this email address — you will receive a secure reset link to complete the change.</p>
+<p>If you did not expect this, you can ignore this email; your current password keeps working until a reset is completed.</p>`
+  });
+
+  writeAudit(state, actor.email, 'user.password_reset', target.email,
+    `Password reset requested; notification email status: ${mail.status}`);
+  persistPlatform();
+  return res.json({
+    success: true,
+    reset: { status: mail.status, error: mail.error, messageId: mail.messageId }
+  });
 }));
 
 // --- Admin: signup approvals -------------------------------------------------
@@ -1910,6 +2010,32 @@ app.put('/api/admin/config/master-admins', requireMasterAdmin, ah(async (req, re
     stored: state.masterAdminEmails,
     env: OWNER_EMAILS,
     effective: effectiveMasterAdmins(state)
+  });
+}));
+
+// --- Admin: overview (Admin Command Center) -----------------------------------
+
+app.get('/api/admin/overview', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  const users = Object.values(state.users);
+  const byStatus: Record<string, number> = { active: 0, pending_approval: 0, disabled: 0 };
+  const byPlan: Record<string, number> = {};
+  for (const u of users) {
+    byStatus[u.status] = (byStatus[u.status] ?? 0) + 1;
+    const key = u.planId ?? 'none';
+    byPlan[key] = (byPlan[key] ?? 0) + 1;
+  }
+  return res.json({
+    success: true,
+    overview: {
+      totalUsers: users.length,
+      byStatus,
+      byPlan,
+      pendingApprovals: byStatus.pending_approval ?? 0,
+      masterAdminCount: effectiveMasterAdmins(state).length,
+      envFallbackActive: OWNER_EMAILS.length > 0,
+      recentAudit: state.audit.slice(0, 10)
+    }
   });
 }));
 

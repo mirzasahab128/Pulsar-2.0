@@ -19,6 +19,9 @@ const {
   validateMasterAdminUpdate,
   ensureUserRecord,
   findUser,
+  effectiveFeatures,
+  markUserDeleted,
+  isDeletedUser,
   featureGateDecision,
   limitGateDecision,
   recordUsage,
@@ -304,5 +307,92 @@ describe('aggregateDashboardStats (prompt Part 2)', () => {
   it('range controls the series length', () => {
     assert.equal(aggregateDashboardStats(null, 30, now).leadsOverTime.length, 30);
     assert.equal(aggregateDashboardStats(null, 90, now).leadsOverTime.length, 90);
+  });
+});
+
+describe('Admin Command Center: per-user feature overrides', () => {
+  function stateWithOverrides(planId: string | null, overrides: Record<string, boolean>) {
+    const state = emptyPlatformState();
+    state.users['user-1'] = {
+      uid: 'user-1',
+      email: 'person@example.com',
+      displayName: 'Person',
+      role: 'user',
+      planId,
+      status: 'active',
+      featureOverrides: overrides,
+      createdAt: new Date().toISOString()
+    };
+    return state;
+  }
+
+  it('effectiveFeatures: plan defaults when there are no overrides', () => {
+    const plans = getSeedPlans();
+    const eff = effectiveFeatures(plans.trial, {});
+    assert.equal(eff.lead_discovery, true);
+    assert.equal(eff.call_studio, false);
+    const none = effectiveFeatures(null, null);
+    for (const key of FEATURE_KEYS) assert.equal(none[key], false);
+  });
+
+  it('effectiveFeatures: grant adds an area, revoke removes one', () => {
+    const plans = getSeedPlans();
+    const eff = effectiveFeatures(plans.trial, { call_studio: true, npi_search: false });
+    assert.equal(eff.call_studio, true);
+    assert.equal(eff.npi_search, false);
+    assert.equal(eff.lead_discovery, true); // untouched plan feature
+  });
+
+  it('gate: a granted override unlocks exactly that area for a Trial user', () => {
+    const state = stateWithOverrides('trial', { call_studio: true });
+    assert.equal(featureGateDecision(state, decoded(), 'call_studio').allow, true);
+    const other = featureGateDecision(state, decoded(), 'daily_briefing');
+    assert.equal(other.allow, false);
+    if (!other.allow) assert.equal(other.body.error, 'PLAN_FEATURE_NOT_INCLUDED');
+  });
+
+  it('gate: a revoked override blocks a plan feature', () => {
+    const state = stateWithOverrides('starter', { npi_search: false });
+    const verdict = featureGateDecision(state, decoded(), 'npi_search');
+    assert.equal(verdict.allow, false);
+    if (!verdict.allow) assert.equal(verdict.body.error, 'PLAN_FEATURE_NOT_INCLUDED');
+  });
+
+  it('resolveAccess exposes effective features and the raw overrides', () => {
+    const state = stateWithOverrides('trial', { call_studio: true });
+    const access = resolveAccess(state, decoded());
+    assert.equal(access.features.call_studio, true);
+    assert.equal(access.features.daily_briefing, false);
+    assert.deepEqual(access.featureOverrides, { call_studio: true });
+  });
+});
+
+describe('Admin Command Center: delete tombstones', () => {
+  it('a deleted identity is rejected by the gate even with no record', () => {
+    const state = emptyPlatformState();
+    const { user } = ensureUserRecord(state, { uid: 'user-1', email: 'person@example.com' });
+    user.status = 'active';
+    user.planId = 'growth';
+    delete state.users[user.uid];
+    markUserDeleted(state, user, 'owner-test@example.com');
+    assert.equal(isDeletedUser(state, 'user-1', 'person@example.com'), true);
+    const verdict = featureGateDecision(state, decoded(), 'call_studio');
+    assert.equal(verdict.allow, false);
+    if (!verdict.allow) {
+      assert.equal(verdict.body.error, 'ACCOUNT_NOT_ACTIVE');
+      assert.equal(verdict.body.status, 'deleted');
+    }
+  });
+
+  it('signing in again clears the tombstone and restarts as pending_approval', () => {
+    const state = emptyPlatformState();
+    const { user } = ensureUserRecord(state, { uid: 'user-1', email: 'person@example.com' });
+    markUserDeleted(state, user, 'owner-test@example.com');
+    const again = ensureUserRecord(state, { uid: 'user-1', email: 'person@example.com' });
+    assert.equal(isDeletedUser(state, 'user-1', 'person@example.com'), false);
+    assert.equal(again.user.status, 'pending_approval');
+    const verdict = featureGateDecision(state, decoded(), 'npi_search');
+    assert.equal(verdict.allow, false);
+    if (!verdict.allow) assert.equal(verdict.body.error, 'ACCOUNT_NOT_ACTIVE');
   });
 });

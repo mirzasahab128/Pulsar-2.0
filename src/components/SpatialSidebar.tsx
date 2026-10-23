@@ -142,12 +142,12 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
     }
   ];
 
-  // Phases 1–3 (§3): the Admin Access Control item exists only for master
+  // Phases 1–3 (§3): the Admin Command Center item exists only for master
   // admins. It is separate from IntegrationsAdminWorkspace — do not merge.
   if (access?.isMasterAdmin) {
     const adminGroup = navGroups.find(g => g.label === 'Administration');
     if (adminGroup && !adminGroup.items.some(i => i.id === 'admin_access')) {
-      adminGroup.items.unshift({ id: 'admin_access', label: 'Admin Access Control', icon: ShieldCheck, badgeVariant: 'violet' });
+      adminGroup.items.unshift({ id: 'admin_access', label: 'Admin Command Center', icon: ShieldCheck, badgeVariant: 'violet' });
     }
   }
 

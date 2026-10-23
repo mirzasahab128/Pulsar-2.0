@@ -38,7 +38,7 @@ import {
 } from './types';
 import { Header } from './components/Header';
 import { SpatialSidebar } from './components/SpatialSidebar';
-import { AdminAccessControlCenter } from './components/AdminAccessControlCenter';
+import { AdminCommandCenter } from './components/AdminCommandCenter';
 import { PipelineWorkspace } from './components/PipelineWorkspace';
 import { SpatialCommandBar } from './components/SpatialCommandBar';
 import { SpatialCommandPalette } from './components/SpatialCommandPalette';
@@ -1237,10 +1237,10 @@ export default function App() {
           />
         )}
 
-        {/* Phases 1–3: Admin Access Control Center (master admins only;
-            the server enforces the same gate on /api/admin/*) */}
+        {/* Admin Command Center (master admins only; the server enforces
+            the same gate on /api/admin/*). Route id stays admin_access. */}
         {activeModule === 'admin_access' && access?.isMasterAdmin && (
-          <AdminAccessControlCenter />
+          <AdminCommandCenter />
         )}
 
         {/* Phases 4–6: Pipeline Ops (lead registry, notes & tasks, email

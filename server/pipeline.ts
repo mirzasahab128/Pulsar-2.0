@@ -32,7 +32,8 @@ import {
   currentUsage,
   recordUsage,
   findUser,
-  isMasterAdminEmail
+  isMasterAdminEmail,
+  effectiveFeatures
 } from './platform.js';
 
 // ---------------------------------------------------------------------------
@@ -918,7 +919,8 @@ export async function processDueSequences(
     const master = isMasterAdminEmail(platform, seq.createdBy);
     if (record && !master) {
       const plan = record.planId ? platform.plans[record.planId] : null;
-      if (!plan || plan.features?.email_outreach !== true) ctx.blocked = true;
+      // Effective access (plan ± per-user overrides), same as the gates.
+      if (!plan || effectiveFeatures(plan, record.featureOverrides).email_outreach !== true) ctx.blocked = true;
       else if (typeof plan.limits.sendsPerMonth === 'number'
         && currentUsage(platform, seq.createdByUid).sends >= plan.limits.sendsPerMonth) {
         ctx.limitReached = true;
