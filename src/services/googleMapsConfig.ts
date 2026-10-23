@@ -5,7 +5,7 @@
 
 export const GOOGLE_MAPS_API_KEY: string =
   (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string) ||
-  'AIzaSyBUy5M6YiqSbAOc-4ca3NUEMyLD4o3qNho';
+  'AIzaSyCESzxO08ZD8lbuU7i3cTC15piWf_NTQ5U';
 
 // Required usage attribution ID for Google Maps Platform agentic code
 export const INTERNAL_USAGE_ATTRIBUTION_ID = 'gmp_mcp_codeassist_v1_aistudio';
