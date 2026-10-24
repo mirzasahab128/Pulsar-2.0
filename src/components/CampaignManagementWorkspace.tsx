@@ -147,21 +147,21 @@ export const CampaignManagementWorkspace: React.FC<CampaignManagementWorkspacePr
         isDark ? 'bg-slate-900/60 border-white/[0.08]' : 'bg-white border-slate-200 shadow-sm'
       }`}>
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 mb-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-[var(--pv-accent)] mb-1">
             <Flame className="w-4 h-4" />
             <span>MULTI-CHANNEL OUTREACH ENGINE</span>
           </div>
-          <h1 className="text-2xl font-black text-white font-display tracking-tight">
+          <h1 className="text-2xl font-black text-[var(--pv-ink)] font-display tracking-tight">
             Campaign Orchestration
           </h1>
-          <p className="text-xs text-slate-400 max-w-xl mt-1">
+          <p className="text-xs text-[var(--pv-muted)] max-w-xl mt-1">
             Execute personalized email, LinkedIn, and AI voice sequences with strict deliverability and platform compliance.
           </p>
         </div>
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-violet-500/25 transition cursor-pointer shrink-0"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#0B5D3B] to-[#1DA068] hover:brightness-110 text-white font-bold text-xs shadow-lg shadow-[var(--pv-shadow)] transition cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>New Campaign</span>
@@ -180,20 +180,20 @@ export const CampaignManagementWorkspace: React.FC<CampaignManagementWorkspacePr
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2.5">
-                  <span className="font-bold text-base text-white">{camp.name}</span>
+                  <span className="font-bold text-base text-[var(--pv-ink)]">{camp.name}</span>
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${
                     camp.status === 'running'
                       ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                       : camp.status === 'scheduled'
-                        ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                        ? 'bg-cyan-500/10 text-[var(--pv-green)] border-cyan-500/30'
                         : camp.status === 'paused'
                           ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-                          : 'bg-slate-500/10 text-slate-300 border-slate-500/30'
+                          : 'bg-slate-500/10 text-[var(--pv-ink)] border-slate-500/30'
                   }`}>
                     {camp.status}
                   </span>
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">{camp.niche} · Created {camp.createdAt}</div>
+                <div className="text-xs text-[var(--pv-muted)] mt-0.5">{camp.niche} · Created {camp.createdAt}</div>
               </div>
 
               {/* Action Buttons */}
@@ -221,34 +221,34 @@ export const CampaignManagementWorkspace: React.FC<CampaignManagementWorkspacePr
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-[var(--pv-ink)] leading-relaxed">
               {camp.description}
             </p>
 
             {/* Campaign Metrics Bar */}
             <div className="pt-3 border-t border-white/[0.06] grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-mono">Audience</span>
-                <span className="font-bold text-slate-200 tabular-nums">{camp.targetCount} Leads</span>
+                <span className="text-[var(--pv-muted)] block text-[10px] uppercase font-mono">Audience</span>
+                <span className="font-bold text-[var(--pv-ink)] tabular-nums">{camp.targetCount} Leads</span>
               </div>
 
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-mono">Delivered</span>
-                <span className="font-bold text-slate-200 tabular-nums">{camp.deliveredCount} Sends</span>
+                <span className="text-[var(--pv-muted)] block text-[10px] uppercase font-mono">Delivered</span>
+                <span className="font-bold text-[var(--pv-ink)] tabular-nums">{camp.deliveredCount} Sends</span>
               </div>
 
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-mono">Open Rate</span>
-                <span className="font-bold text-cyan-400 tabular-nums">{camp.openRate}%</span>
+                <span className="text-[var(--pv-muted)] block text-[10px] uppercase font-mono">Open Rate</span>
+                <span className="font-bold text-[var(--pv-accent)] tabular-nums">{camp.openRate}%</span>
               </div>
 
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-mono">Reply Rate</span>
+                <span className="text-[var(--pv-muted)] block text-[10px] uppercase font-mono">Reply Rate</span>
                 <span className="font-bold text-violet-400 tabular-nums">{camp.replyRate}%</span>
               </div>
 
               <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-mono">Meetings</span>
+                <span className="text-[var(--pv-muted)] block text-[10px] uppercase font-mono">Meetings</span>
                 <span className="font-bold text-emerald-400 tabular-nums">{camp.meetingsBooked} Booked</span>
               </div>
             </div>
@@ -264,41 +264,41 @@ export const CampaignManagementWorkspace: React.FC<CampaignManagementWorkspacePr
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
               <span className="font-bold text-base">Create Autonomous Campaign</span>
-              <button onClick={() => setIsCreateModalOpen(false)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsCreateModalOpen(false)} className="p-1 text-[var(--pv-muted)] hover:text-[var(--pv-ink)] cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-semibold block mb-1 text-slate-300">Campaign Name</label>
+                <label className="font-semibold block mb-1 text-[var(--pv-ink)]">Campaign Name</label>
                 <input
                   type="text"
                   value={newCampaignName}
                   onChange={e => setNewCampaignName(e.target.value)}
                   placeholder="e.g. Q4 Pain Management Denial Audit Offer"
-                  className="w-full p-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-violet-500"
+                  className="w-full p-2.5 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
 
               <div>
-                <label className="font-semibold block mb-1 text-slate-300">Target Industry Niche</label>
+                <label className="font-semibold block mb-1 text-[var(--pv-ink)]">Target Industry Niche</label>
                 <input
                   type="text"
                   value={newCampaignNiche}
                   onChange={e => setNewCampaignNiche(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-violet-500"
+                  className="w-full p-2.5 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
 
               <div>
-                <label className="font-semibold block mb-1 text-slate-300">Value Proposition & Objective</label>
+                <label className="font-semibold block mb-1 text-[var(--pv-ink)]">Value Proposition & Objective</label>
                 <textarea
                   rows={3}
                   value={newCampaignDesc}
                   onChange={e => setNewCampaignDesc(e.target.value)}
                   placeholder="Describe the offer, e.g. 50-claim retrospective audit to uncover modifier underpayments."
-                  className="w-full p-2.5 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-violet-500"
+                  className="w-full p-2.5 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
             </div>
@@ -306,13 +306,13 @@ export const CampaignManagementWorkspace: React.FC<CampaignManagementWorkspacePr
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/[0.08]">
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 rounded-xl text-[var(--pv-muted)] hover:text-[var(--pv-ink)] text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateCampaign}
-                className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-md transition cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white font-bold text-xs shadow-md transition cursor-pointer"
               >
                 Create Campaign
               </button>

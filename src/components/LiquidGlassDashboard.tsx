@@ -264,8 +264,8 @@ export const LiquidGlassDashboard: React.FC<LiquidGlassDashboardProps> = ({
     <div className="space-y-6 pb-12">
       {/* Top Controls: Segmented View Switcher & Classic Toggle */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Segmented Control Switcher */}
-        <div className="lg-glass p-1.5 rounded-2xl flex flex-wrap items-center gap-1">
+        {/* Segmented Control Switcher — Phase 1 theme pill tabs */}
+        <div className="pv-tabs flex-wrap">
           {(
             [
               { id: 'overview', label: 'Overview', icon: Compass },
@@ -282,11 +282,8 @@ export const LiquidGlassDashboard: React.FC<LiquidGlassDashboardProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveView(tab.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
-                  isActive
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20'
-                    : 'text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)] hover:bg-[var(--lg-bg-elevated)]'
-                }`}
+                className={isActive ? 'active' : ''}
+                aria-pressed={isActive}
               >
                 <Icon className="w-4 h-4" />
                 <span>{tab.label}</span>
@@ -300,9 +297,9 @@ export const LiquidGlassDashboard: React.FC<LiquidGlassDashboardProps> = ({
           <button
             type="button"
             onClick={onToggleClassicDashboard}
-            className="lg-glass lg-btn-ghost px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 self-start md:self-auto"
+            className="px-4 py-2.5 text-xs font-bold rounded-full flex items-center gap-2 self-start md:self-auto bg-[var(--pv-card)] border border-[var(--pv-border)] text-[var(--pv-ink)] shadow-[var(--pv-shadow)] hover:bg-[var(--pv-mint)] transition cursor-pointer"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--lg-emerald)]" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[var(--pv-green)]" />
             <span>Switch to Classic Dashboard</span>
           </button>
         )}

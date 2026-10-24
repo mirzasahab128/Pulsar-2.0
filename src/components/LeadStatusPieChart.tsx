@@ -32,14 +32,14 @@ interface LeadStatusPieChartProps {
 
 // Color palette specifically matched to Pulsar green, blue, and white design system
 export const STATUS_CHART_COLORS: Record<string, { fill: string; border: string; text: string; bg: string; icon: string }> = {
-  'Ready for Call': { fill: '#64748b', border: '#94a3b8', text: 'text-slate-300', bg: 'bg-slate-800/80', icon: 'phone' },
-  'Calling': { fill: '#059669', border: '#10b981', text: 'text-emerald-300', bg: 'bg-emerald-500/20', icon: 'radio' },
-  'Transferred to Manager': { fill: '#10b981', border: '#34d399', text: 'text-emerald-300', bg: 'bg-emerald-500/20', icon: 'phone-forwarded' },
-  'Audit Scheduled': { fill: '#2563eb', border: '#60a5fa', text: 'text-blue-300', bg: 'bg-blue-500/20', icon: 'check-circle' },
-  'Follow-up': { fill: '#0284c7', border: '#38bdf8', text: 'text-sky-300', bg: 'bg-sky-500/20', icon: 'clock' },
-  'Voicemail': { fill: '#0d9488', border: '#14b8a6', text: 'text-teal-300', bg: 'bg-teal-500/20', icon: 'voicemail' },
-  'Not Interested': { fill: '#475569', border: '#64748b', text: 'text-slate-400', bg: 'bg-slate-700/30', icon: 'x-circle' },
-  'Contacted': { fill: '#06b6d4', border: '#22d3ee', text: 'text-cyan-300', bg: 'bg-cyan-500/20', icon: 'activity' }
+  'Ready for Call': { fill: '#64748b', border: '#94a3b8', text: 'text-[var(--pv-ink)]', bg: 'bg-[var(--pv-card-soft)]', icon: 'phone' },
+  'Calling': { fill: '#059669', border: '#10b981', text: 'text-[var(--pv-green)]', bg: 'bg-[var(--pv-mint)]', icon: 'radio' },
+  'Transferred to Manager': { fill: '#10b981', border: '#34d399', text: 'text-[var(--pv-green)]', bg: 'bg-[var(--pv-mint)]', icon: 'phone-forwarded' },
+  'Audit Scheduled': { fill: '#2563eb', border: '#60a5fa', text: 'text-[var(--pv-sky)]', bg: 'bg-[var(--pv-sky-tint)]', icon: 'check-circle' },
+  'Follow-up': { fill: '#0284c7', border: '#38bdf8', text: 'text-[var(--pv-sky)]', bg: 'bg-sky-500/20', icon: 'clock' },
+  'Voicemail': { fill: '#0d9488', border: '#14b8a6', text: 'text-[var(--pv-accent)]', bg: 'bg-teal-500/20', icon: 'voicemail' },
+  'Not Interested': { fill: '#475569', border: '#64748b', text: 'text-[var(--pv-muted)]', bg: 'bg-slate-700/30', icon: 'x-circle' },
+  'Contacted': { fill: '#06b6d4', border: '#22d3ee', text: 'text-[var(--pv-sky)]', bg: 'bg-cyan-500/20', icon: 'activity' }
 };
 
 export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
@@ -75,7 +75,7 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
       const colorMeta = STATUS_CHART_COLORS[statusName] || { 
         fill: '#8b5cf6', 
         border: '#a78bfa', 
-        text: 'text-purple-300', 
+        text: 'text-[var(--pv-violet)]', 
         bg: 'bg-purple-500/20',
         icon: 'activity'
       };
@@ -105,24 +105,24 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
       const data = payload[0].payload;
       return (
         <div className="p-3 rounded-xl bg-slate-950/95 border border-white/20 shadow-2xl backdrop-blur-md text-xs space-y-1 z-50">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-1">
+          <div className="flex items-center gap-2 border-b border-[var(--pv-border)] pb-1">
             <span 
               className="w-2.5 h-2.5 rounded-full" 
               style={{ backgroundColor: data.color }} 
             />
-            <span className="font-bold text-white text-sm">{data.name}</span>
+            <span className="font-bold text-[var(--pv-ink)] text-sm">{data.name}</span>
           </div>
-          <div className="flex justify-between gap-4 text-slate-300 pt-1">
+          <div className="flex justify-between gap-4 text-[var(--pv-ink)] pt-1">
             <span>Accounts:</span>
-            <strong className="text-white font-mono">{data.value} leads ({data.percentage}%)</strong>
+            <strong className="text-[var(--pv-ink)] font-mono">{data.value} leads ({data.percentage}%)</strong>
           </div>
-          <div className="flex justify-between gap-4 text-slate-300">
+          <div className="flex justify-between gap-4 text-[var(--pv-ink)]">
             <span>Billing Pipeline:</span>
-            <span className="text-emerald-400 font-mono font-semibold">
+            <span className="text-[var(--pv-accent)] font-mono font-semibold">
               ${((data.volumeSum || 0) / 1000).toLocaleString()}k / mo
             </span>
           </div>
-          <div className="text-[10px] text-teal-300 pt-1 italic font-mono">
+          <div className="text-[10px] text-[var(--pv-accent)] pt-1 italic font-mono">
             Click slice to filter directory
           </div>
         </div>
@@ -132,22 +132,22 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
   };
 
   return (
-    <div className="p-4 sm:p-5 rounded-2xl glass-card border border-white/10 bg-slate-950/70 shadow-2xl relative overflow-hidden">
+    <div className="p-4 sm:p-5 rounded-2xl pv-card border border-[var(--pv-border)] bg-[var(--pv-card)] shadow-2xl relative overflow-hidden">
       {/* Ambient background glows */}
       <div className="absolute top-0 right-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--pv-border)]">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold uppercase tracking-wider mb-1">
-            <PieChartIcon className="w-3 h-3 text-emerald-400" />
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-[var(--pv-border)] text-[var(--pv-green)] text-[11px] font-semibold uppercase tracking-wider mb-1">
+            <PieChartIcon className="w-3 h-3 text-[var(--pv-accent)]" />
             Lead Status Distribution & Funnel Velocity
           </div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
+          <h3 className="text-base font-bold text-[var(--pv-ink)] flex items-center gap-2">
             <span>Sales Pipeline Status Distribution</span>
             {activeStatusFilter !== 'All' && (
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-[var(--pv-sky-tint)] text-[var(--pv-sky)] border border-[var(--pv-border)]">
                 Filtered: {activeStatusFilter}
               </span>
             )}
@@ -159,7 +159,7 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
           <button
             type="button"
             onClick={() => onSelectStatusFilter('All')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-500/40 text-xs font-semibold transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--pv-sky-tint)] hover:bg-blue-500/30 text-[var(--pv-sky)] border border-[var(--pv-border)] text-xs font-semibold transition cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
             <span>Reset Status Filter ({activeStatusFilter})</span>
@@ -217,19 +217,19 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
 
             {/* Donut Center Display */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-              <span className="text-2xl font-black text-white font-mono tracking-tight">
+              <span className="text-2xl font-black text-[var(--pv-ink)] font-mono tracking-tight">
                 {totalCount}
               </span>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              <span className="text-[10px] text-[var(--pv-muted)] uppercase tracking-wider font-semibold">
                 Total Leads
               </span>
-              <span className="text-[11px] text-emerald-400 font-bold font-mono mt-0.5">
+              <span className="text-[11px] text-[var(--pv-accent)] font-bold font-mono mt-0.5">
                 {conversionRate}% Hot Intent
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] text-slate-400 text-center italic mt-1">
+          <div className="text-[11px] text-[var(--pv-muted)] text-center italic mt-1">
             Click any segment or status card below to filter the directory table
           </div>
         </div>
@@ -239,40 +239,40 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
           
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-blue-500/20">
-              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+            <div className="p-3 rounded-xl bg-[var(--pv-card-soft)] border border-blue-500/20">
+              <div className="flex items-center gap-1.5 text-[var(--pv-muted)] text-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-[var(--pv-sky)]" />
                 <span>Audits Booked:</span>
               </div>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-lg font-black text-blue-300 font-mono">{auditsCount}</span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-lg font-black text-[var(--pv-sky)] font-mono">{auditsCount}</span>
+                <span className="text-[10px] text-[var(--pv-muted)] font-mono">
                   {totalCount > 0 ? Math.round((auditsCount / totalCount) * 100) : 0}% of list
                 </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-emerald-500/20">
-              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                <PhoneForwarded className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="p-3 rounded-xl bg-[var(--pv-card-soft)] border border-emerald-500/20">
+              <div className="flex items-center gap-1.5 text-[var(--pv-muted)] text-xs">
+                <PhoneForwarded className="w-3.5 h-3.5 text-[var(--pv-accent)]" />
                 <span>Transferred:</span>
               </div>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-lg font-black text-emerald-300 font-mono">{transferredCount}</span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-lg font-black text-[var(--pv-green)] font-mono">{transferredCount}</span>
+                <span className="text-[10px] text-[var(--pv-muted)] font-mono">
                   {totalCount > 0 ? Math.round((transferredCount / totalCount) * 100) : 0}% of list
                 </span>
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-cyan-500/20">
-              <div className="flex items-center gap-1.5 text-slate-400 text-xs">
-                <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="p-3 rounded-xl bg-[var(--pv-card-soft)] border border-cyan-500/20">
+              <div className="flex items-center gap-1.5 text-[var(--pv-muted)] text-xs">
+                <Clock className="w-3.5 h-3.5 text-[var(--pv-sky)]" />
                 <span>Follow-ups:</span>
               </div>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-lg font-black text-cyan-300 font-mono">{followUpCount}</span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-lg font-black text-[var(--pv-sky)] font-mono">{followUpCount}</span>
+                <span className="text-[10px] text-[var(--pv-muted)] font-mono">
                   {totalCount > 0 ? Math.round((followUpCount / totalCount) * 100) : 0}% of list
                 </span>
               </div>
@@ -289,8 +289,8 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
                   onClick={() => onSelectStatusFilter(isSelected ? 'All' : item.name)}
                   className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between ${
                     isSelected 
-                      ? 'border-white/40 ring-2 ring-white/20 bg-slate-800' 
-                      : 'border-white/10 bg-slate-900/60 hover:bg-slate-800/80'
+                      ? 'border-[var(--pv-border)] ring-2 ring-white/20 bg-[var(--pv-card-soft)]' 
+                      : 'border-[var(--pv-border)] bg-slate-900/60 hover:bg-[var(--pv-card-soft)]'
                   }`}
                   style={{
                     borderLeftColor: item.color,
@@ -299,24 +299,24 @@ export const LeadStatusPieChart: React.FC<LeadStatusPieChartProps> = ({
                 >
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-white">{item.name}</span>
+                      <span className="text-xs font-bold text-[var(--pv-ink)]">{item.name}</span>
                       {isSelected && (
                         <span className="text-[10px] px-1 rounded bg-teal-500 text-slate-950 font-bold">
                           Filtered
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono">
+                    <div className="text-[11px] text-[var(--pv-muted)] font-mono">
                       ${((item.volumeSum || 0) / 1000).toFixed(0)}k volume
                     </div>
                   </div>
 
                   <div className="text-right">
-                    <span className="text-xs font-black font-mono text-white block">
-                      {item.value} <span className="text-[10px] text-slate-400 font-normal">({item.percentage}%)</span>
+                    <span className="text-xs font-black font-mono text-[var(--pv-ink)] block">
+                      {item.value} <span className="text-[10px] text-[var(--pv-muted)] font-normal">({item.percentage}%)</span>
                     </span>
                     {/* Small progress bar */}
-                    <div className="w-16 h-1.5 rounded-full bg-slate-800 overflow-hidden mt-1">
+                    <div className="w-16 h-1.5 rounded-full bg-[var(--pv-card-soft)] overflow-hidden mt-1">
                       <div 
                         className="h-full rounded-full" 
                         style={{ 

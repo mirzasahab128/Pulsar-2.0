@@ -24,12 +24,11 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { RCMLead, DailyStats, WarmTransferRecord, ActionItem, PulsarSpatialModule, ManagerSettings } from '../types';
-import { useTheme } from '../context/ThemeContext';
 import { NicheTemplate } from '../data/nicheTemplates';
 import { PulsarBrandHero } from './PulsarBrandHero';
 import { PulsarIntelligencePanel } from './PulsarIntelligencePanel';
 import { TelephonyStatusCard } from './TelephonyStatusCard';
-import { DashboardProgress } from './DashboardProgress';
+import { DashboardProgress, useCountUp } from './DashboardProgress';
 
 interface DashboardProps {
   stats: DailyStats;
@@ -46,6 +45,11 @@ interface DashboardProps {
   onOpenSettings?: () => void;
 }
 
+const CountNum: React.FC<{ value: number; className?: string }> = ({ value, className }) => {
+  const display = useCountUp(value);
+  return <div className={className}>{display.toLocaleString()}</div>;
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({
   stats,
   leads,
@@ -60,8 +64,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   settings,
   onOpenSettings
 }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'ready' | 'transferred' | 'scheduled'>('all');
 
@@ -87,62 +89,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <DashboardProgress leads={leads} tasks={tasks} warmTransfers={warmTransfers} />
 
       {/* 1. Workspace Context & Filter Bar */}
-      <div className={`p-3.5 rounded-2xl border backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs transition-colors duration-200 ${
-        isDark 
-          ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-          : 'bg-white/95 border-[#DCE5EC] text-[#172338] shadow-sm'
-      }`}>
+      <div className="pv-panel p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
         {/* Left: Active Workspace / Niche Info */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={onOpenNicheLibrary}
-            className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold transition cursor-pointer ${
-              isDark 
-                ? 'bg-slate-800/80 border-slate-700 text-teal-300 hover:text-teal-200' 
-                : 'bg-[#EAF5F7] border-teal-200/80 text-teal-900 hover:bg-teal-100/70'
-            }`}
+            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border font-semibold transition cursor-pointer bg-[var(--pv-mint)] border-[var(--pv-mint-2)] text-[var(--pv-green)] hover:bg-[var(--pv-mint-2)]"
             title="Switch industry templates & parameters"
           >
-            <Layers className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 group-hover:rotate-12 transition-transform duration-300" />
+            <Layers className="w-3.5 h-3.5 text-[var(--pv-green)] group-hover:rotate-12 transition-transform duration-300" />
             <span>Workspace: {nicheTemplate.name.split('&')[0].trim()}</span>
-            <span className="text-[10px] font-mono uppercase px-1 py-0.2 rounded bg-teal-500/20 text-teal-700 dark:text-teal-300">
+            <span className="text-[10px] font-mono uppercase px-1.5 py-0.2 rounded-full bg-[var(--pv-card)] text-[var(--pv-green)]">
               Change
             </span>
           </button>
 
-          <span className="text-slate-400 dark:text-slate-600 hidden sm:inline">·</span>
+          <span className="text-[var(--pv-muted)] hidden sm:inline">·</span>
 
           {/* Quick Segmented Filter Tabs */}
-          <div className={`hidden sm:inline-flex items-center gap-1 p-1 rounded-xl border ${
-            isDark ? 'bg-slate-900/60 border-slate-700/40' : 'bg-slate-100/80 border-slate-200'
-          }`}>
+          <div className="pv-seg hidden sm:inline-flex">
             <button
               onClick={() => setActiveFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                activeFilter === 'all'
-                  ? 'bg-[#0D9488] text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className={activeFilter === 'all' ? 'active' : ''}
             >
               All ({leads.length})
             </button>
             <button
               onClick={() => setActiveFilter('ready')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                activeFilter === 'ready'
-                  ? 'bg-[#0D9488] text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className={activeFilter === 'ready' ? 'active' : ''}
             >
               Ready to Call
             </button>
             <button
               onClick={() => setActiveFilter('scheduled')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                activeFilter === 'scheduled'
-                  ? 'bg-[#0D9488] text-white shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
+              className={activeFilter === 'scheduled' ? 'active' : ''}
             >
               Audits Scheduled
             </button>
@@ -160,7 +140,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <button
             onClick={() => onNavigate('leads')}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white font-bold text-xs shadow-sm transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white font-bold text-xs shadow-sm transition cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>Prospect Radar</span>
@@ -168,25 +148,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           <button
             onClick={() => onNavigate('call_studio')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold text-xs transition cursor-pointer ${
-              isDark 
-                ? 'bg-slate-800/80 border-slate-700 text-slate-200 hover:text-white' 
-                : 'bg-white border-[#DCE5EC] text-slate-700 hover:bg-slate-50'
-            }`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border font-semibold text-xs transition cursor-pointer bg-[var(--pv-card)] border-[var(--pv-border)] text-[var(--pv-ink)] hover:bg-[var(--pv-mint)]"
           >
-            <PhoneCall className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <PhoneCall className="w-3.5 h-3.5 text-[var(--pv-green)]" />
             <span>Dialer Studio</span>
           </button>
 
           <button
             onClick={() => onNavigate('territory_maps')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold text-xs transition cursor-pointer ${
-              isDark 
-                ? 'bg-blue-950/30 border-blue-800/40 text-blue-300 hover:bg-blue-900/40' 
-                : 'bg-blue-50 border-blue-200 text-blue-900 hover:bg-blue-100'
-            }`}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border font-semibold text-xs transition cursor-pointer bg-[var(--pv-sky-tint)] border-[var(--pv-border)] text-[var(--pv-sky)] hover:brightness-95"
           >
-            <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <MapPin className="w-3.5 h-3.5 text-[var(--pv-sky)]" />
             <span>Field Maps</span>
           </button>
         </div>
@@ -205,99 +177,71 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         
         {/* KPI 1: Prospects Discovered */}
-        <div className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark 
-            ? 'bg-[#111C2E]/90 border-slate-700/40 text-slate-100' 
-            : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+        <div className="pv-card pv-card-hover p-5">
+          <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Discovered</span>
-            <Building2 className="w-4 h-4 text-[#0D9488] dark:text-[#2DD4BF]" />
+            <span className="pv-chip pv-tint-green" style={{ width: 32, height: 32, borderRadius: 10 }}><Building2 className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white tabular-nums">
-            {leads.length}
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+          <CountNum value={leads.length} className="text-[28px] font-black font-display tracking-tight tabular-nums text-[var(--pv-ink)]" />
+          <div className="text-[11px] text-[var(--pv-muted)] mt-1 flex items-center justify-between">
             <span>+{stats.leadsScraped} today</span>
-            <span className="text-teal-700 dark:text-teal-300 font-mono text-[10px] font-semibold">Registry</span>
+            <span className="text-[var(--pv-green)] font-mono text-[10px] font-semibold">Registry</span>
           </div>
         </div>
 
         {/* KPI 2: Qualified Leads */}
-        <div className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark 
-            ? 'bg-[#111C2E]/90 border-slate-700/40 text-slate-100' 
-            : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+        <div className="pv-card pv-card-hover p-5">
+          <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Qualified Pipeline</span>
-            <ShieldCheck className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA]" />
+            <span className="pv-chip pv-tint-sky" style={{ width: 32, height: 32, borderRadius: 10 }}><ShieldCheck className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white tabular-nums">
-            {qualifiedLeads.length}
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+          <CountNum value={qualifiedLeads.length} className="text-[28px] font-black font-display tracking-tight tabular-nums text-[var(--pv-ink)]" />
+          <div className="text-[11px] text-[var(--pv-muted)] mt-1 flex items-center justify-between">
             <span>{Math.round((qualifiedLeads.length / Math.max(1, leads.length)) * 100)}% match</span>
-            <span className="text-blue-700 dark:text-blue-400 font-mono text-[10px] font-semibold">High Intent</span>
+            <span className="text-[var(--pv-sky)] font-mono text-[10px] font-semibold">High Intent</span>
           </div>
         </div>
 
         {/* KPI 3: AI Telephony Connects */}
-        <div className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark 
-            ? 'bg-[#111C2E]/90 border-slate-700/40 text-slate-100' 
-            : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+        <div className="pv-card pv-card-hover p-5">
+          <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Calls Placed</span>
-            <PhoneCall className="w-4 h-4 text-[#0D9488] dark:text-[#2DD4BF]" />
+            <span className="pv-chip pv-tint-green" style={{ width: 32, height: 32, borderRadius: 10 }}><PhoneCall className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white tabular-nums">
-            {stats.callsPlaced}
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+          <CountNum value={stats.callsPlaced} className="text-[28px] font-black font-display tracking-tight tabular-nums text-[var(--pv-ink)]" />
+          <div className="text-[11px] text-[var(--pv-muted)] mt-1 flex items-center justify-between">
             <span>{stats.humanConnects} connects</span>
-            <span className="text-teal-700 dark:text-teal-300 font-mono text-[10px] font-semibold">
+            <span className="text-[var(--pv-green)] font-mono text-[10px] font-semibold">
               {Math.round((stats.humanConnects / Math.max(1, stats.callsPlaced)) * 100)}% pickup
             </span>
           </div>
         </div>
 
         {/* KPI 4: Warm Transfers Bridged */}
-        <div className={`p-4 rounded-2xl border transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark 
-            ? 'bg-[#111C2E]/90 border-slate-700/40 text-slate-100' 
-            : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+        <div className="pv-card pv-card-hover p-5">
+          <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Warm Transfers</span>
-            <PhoneForwarded className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span className="pv-chip pv-tint-amber" style={{ width: 32, height: 32, borderRadius: 10 }}><PhoneForwarded className="w-4 h-4" /></span>
           </div>
-          <div className="text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white tabular-nums">
-            {warmTransfers.length}
-          </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+          <CountNum value={warmTransfers.length} className="text-[28px] font-black font-display tracking-tight tabular-nums text-[var(--pv-ink)]" />
+          <div className="text-[11px] text-[var(--pv-muted)] mt-1 flex items-center justify-between">
             <span>{stats.auditsBooked} audits booked</span>
-            <span className="text-amber-700 dark:text-amber-400 font-mono text-[10px] font-semibold">Manager</span>
+            <span className="text-[var(--pv-amber)] font-mono text-[10px] font-semibold">Manager</span>
           </div>
         </div>
 
         {/* KPI 5: Pipeline Added */}
-        <div className={`p-4 rounded-2xl border col-span-2 sm:col-span-1 transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark 
-            ? 'bg-[#111C2E]/90 border-slate-700/40 text-slate-100' 
-            : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-        }`}>
-          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1.5 font-medium">
+        <div className="pv-card pv-card-hover p-5 col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Pipeline Value</span>
-            <TrendingUp className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA]" />
+            <span className="pv-chip pv-tint-violet" style={{ width: 32, height: 32, borderRadius: 10 }}><TrendingUp className="w-4 h-4" /></span>
           </div>
-          <div className="text-xl sm:text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white tabular-nums truncate">
+          <div className="text-xl sm:text-[28px] font-black font-display tracking-tight text-[var(--pv-ink)] tabular-nums truncate">
             {stats.pipelineAdded}
           </div>
-          <div className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 flex items-center justify-between">
+          <div className="text-[11px] text-[var(--pv-muted)] mt-1 flex items-center justify-between">
             <span>Contract pipeline</span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-mono text-[10px] font-semibold">Active</span>
+            <span className="text-[var(--pv-accent)] font-mono text-[10px] font-semibold">Active</span>
           </div>
         </div>
 
@@ -320,11 +264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           />
 
           {/* Priority Outreach & Lead Queue */}
-          <div className={`p-5 rounded-2xl border backdrop-blur-xl space-y-4 ${
-            isDark 
-              ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-              : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-          }`}>
+          <div className="pv-panel p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold tracking-tight font-display text-[var(--text-primary)]">
@@ -337,7 +277,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <button
                 onClick={() => onNavigate('leads')}
-                className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[var(--pv-green)] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>Full Prospect Database ({leads.length})</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -354,18 +294,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 displayLeads.slice(0, 4).map((lead) => (
                   <div 
                     key={lead.id}
-                    className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
-                      isDark 
-                        ? 'bg-slate-900/60 border-slate-700/40 hover:bg-slate-800/60' 
-                        : 'bg-[#F8FAFC] border-[#DCE5EC] hover:bg-slate-50'
-                    }`}
+                    className="p-3.5 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors"
                   >
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs sm:text-sm text-[var(--text-primary)] truncate">
                           {lead.practiceName}
                         </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/40 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40 font-semibold shrink-0">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[var(--pv-mint)] text-[var(--pv-green)] border border-[var(--pv-mint-2)] font-semibold shrink-0">
                           {lead.status}
                         </span>
                       </div>
@@ -384,7 +320,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                       <button
                         onClick={() => onTriggerCall(lead)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0D9488] hover:bg-[#0f766e] text-white font-bold text-xs transition cursor-pointer shadow-sm"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white font-bold text-xs transition cursor-pointer shadow-sm"
                       >
                         <PhoneCall className="w-3.5 h-3.5" />
                         <span>Dial</span>
@@ -392,11 +328,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                       <button
                         onClick={() => onNavigate('territory_maps')}
-                        className={`p-1.5 rounded-lg border transition cursor-pointer ${
-                          isDark 
-                            ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white' 
-                            : 'bg-white border-[#DCE5EC] text-slate-600 hover:text-slate-900'
-                        }`}
+                        className="p-1.5 rounded-full border transition cursor-pointer bg-[var(--pv-card)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]"
                         title="Locate on Territory Map"
                       >
                         <MapPin className="w-3.5 h-3.5" />
@@ -409,11 +341,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Revenue Stage Conversion Funnel */}
-          <div className={`p-5 rounded-2xl border backdrop-blur-xl space-y-4 ${
-            isDark 
-              ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-              : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-          }`}>
+          <div className="pv-panel p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold tracking-tight font-display text-[var(--text-primary)]">
@@ -426,7 +354,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               <button
                 onClick={() => onNavigate('pipeline')}
-                className="text-xs font-semibold text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[var(--pv-sky)] hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <span>Velocity Hub</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -439,8 +367,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>Stage 1: Discovery & Radar Ingestion</span>
                   <span className="font-mono tabular-nums text-[var(--text-primary)] font-bold">{leads.length} accounts</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <div className="h-full bg-[#38BDF8] rounded-full" style={{ width: '100%' }} />
+                <div className="pv-track">
+                  <div style={{ width: '100%', background: 'var(--pv-sky)' }} />
                 </div>
               </div>
 
@@ -449,11 +377,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>Stage 2: AI Voice Decision-Maker Engagement</span>
                   <span className="font-mono tabular-nums text-[var(--text-primary)] font-bold">{stats.humanConnects} connects</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <div 
-                    className="h-full bg-[#0D9488] rounded-full" 
-                    style={{ width: `${Math.round((stats.humanConnects / Math.max(1, leads.length)) * 100)}%` }} 
-                  />
+                <div className="pv-track">
+                  <div style={{ width: `${Math.round((stats.humanConnects / Math.max(1, leads.length)) * 100)}%` }} />
                 </div>
               </div>
 
@@ -462,11 +387,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <span>Stage 3: Manager Warm Handoff & Complimentary Audits</span>
                   <span className="font-mono tabular-nums text-[var(--text-primary)] font-bold">{warmTransfers.length} bridged</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                  <div 
-                    className="h-full bg-[#2563EB] rounded-full" 
-                    style={{ width: `${Math.round((warmTransfers.length / Math.max(1, leads.length)) * 100)}%` }} 
-                  />
+                <div className="pv-track">
+                  <div style={{ width: `${Math.round((warmTransfers.length / Math.max(1, leads.length)) * 100)}%`, background: 'var(--pv-violet)' }} />
                 </div>
               </div>
             </div>
@@ -484,14 +406,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           />
 
           {/* Live Warm Transfers */}
-          <div className={`p-5 rounded-2xl border backdrop-blur-xl space-y-3 ${
-            isDark 
-              ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-              : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-          }`}>
+          <div className="pv-panel p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <PhoneForwarded className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <PhoneForwarded className="w-4 h-4 text-[var(--pv-accent)]" />
                 <h3 className="font-bold text-sm text-[var(--text-primary)]">Live Warm Transfers</h3>
               </div>
 
@@ -512,18 +430,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 warmTransfers.slice(0, 3).map((record) => (
                   <div 
                     key={record.id}
-                    className={`p-3 rounded-xl border text-xs space-y-1.5 transition ${
-                      isDark 
-                        ? 'bg-slate-900/60 border-slate-700/40' 
-                        : 'bg-[#F8FAFC] border-[#DCE5EC]'
-                    }`}
+                    className="p-3 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-xs space-y-1.5 transition"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-[var(--text-primary)]">{record.leadName}</span>
-                      <span className="text-[10px] font-mono text-teal-700 dark:text-teal-400 font-semibold">{record.bridgedAt}</span>
+                      <span className="text-[10px] font-mono text-[var(--pv-accent)] font-semibold">{record.bridgedAt}</span>
                     </div>
                     <div className="text-[var(--text-secondary)] text-[11px]">{record.practiceName} · {record.phone}</div>
-                    <div className="text-[11px] text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800/40 font-semibold">
+                    <div className="text-[11px] text-[var(--pv-green)] bg-[var(--pv-mint)] px-2 py-0.5 rounded-full border border-[var(--pv-mint-2)] font-semibold">
                       Outcome: {record.outcome}
                     </div>
                   </div>
@@ -533,14 +447,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Pending Tasks & Approvals Queue */}
-          <div className={`p-5 rounded-2xl border backdrop-blur-xl space-y-3 ${
-            isDark 
-              ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-              : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-          }`}>
+          <div className="pv-panel p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                <Bell className="w-4 h-4 text-[var(--pv-amber)]" />
                 <h3 className="font-bold text-sm text-[var(--text-primary)]">Action Items & Due Tasks</h3>
               </div>
 
@@ -561,11 +471,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 pendingTasks.slice(0, 4).map((task) => (
                   <div 
                     key={task.id}
-                    className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition ${
-                      isDark 
-                        ? 'bg-slate-900/60 border-slate-700/40' 
-                        : 'bg-[#F8FAFC] border-[#DCE5EC]'
-                    }`}
+                    className="p-3 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-xs flex items-center justify-between gap-3 transition"
                   >
                     <div className="min-w-0">
                       <div className="font-bold text-[var(--text-primary)] truncate">{task.task}</div>
@@ -576,7 +482,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                     <button
                       onClick={() => onToggleTask(task.id)}
-                      className="p-1.5 rounded-lg border border-teal-500/40 bg-teal-500/10 hover:bg-teal-500/20 text-teal-700 dark:text-teal-300 transition cursor-pointer shrink-0"
+                      className="p-1.5 rounded-full border border-[var(--pv-mint-2)] bg-[var(--pv-mint)] hover:bg-[var(--pv-mint-2)] text-[var(--pv-green)] transition cursor-pointer shrink-0"
                       title="Mark Completed"
                     >
                       <CheckCircle2 className="w-4 h-4" />
@@ -588,54 +494,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
 
           {/* Autonomous Fleet Guardrails Status */}
-          <div className={`p-5 rounded-2xl border backdrop-blur-xl space-y-3 ${
-            isDark 
-              ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' 
-              : 'bg-white border-[#DCE5EC] text-[#172338] shadow-sm'
-          }`}>
+          <div className="pv-panel p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Bot className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                <Bot className="w-4 h-4 text-[var(--pv-violet)]" />
                 <h3 className="font-bold text-sm text-[var(--text-primary)]">Autonomous Fleet</h3>
               </div>
 
               <button
                 onClick={() => onNavigate('ai_agents')}
-                className="text-xs text-violet-700 dark:text-violet-400 hover:underline font-semibold cursor-pointer"
+                className="text-xs text-[var(--pv-violet)] hover:underline font-semibold cursor-pointer"
               >
                 Guardrails →
               </button>
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
-                isDark ? 'bg-slate-900/60 border-slate-700/40' : 'bg-[#F8FAFC] border-[#DCE5EC]'
-              }`}>
+              <div className="p-2.5 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] flex items-center justify-between">
                 <div>
                   <div className="font-bold text-[var(--text-primary)]">Skiper Radar Scraper</div>
                   <div className="text-[11px] text-[var(--text-secondary)]">Registry specialty discovery</div>
                 </div>
-                <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 font-bold">ACTIVE</span>
+                <span className="text-[10px] font-mono text-[var(--pv-accent)] font-bold">ACTIVE</span>
               </div>
 
-              <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
-                isDark ? 'bg-slate-900/60 border-slate-700/40' : 'bg-[#F8FAFC] border-[#DCE5EC]'
-              }`}>
+              <div className="p-2.5 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] flex items-center justify-between">
                 <div>
                   <div className="font-bold text-[var(--text-primary)]">Zoey Telephony Caller</div>
                   <div className="text-[11px] text-[var(--text-secondary)]">Inbound & outbound telephony</div>
                 </div>
-                <span className="text-[10px] font-mono text-teal-700 dark:text-teal-400 font-bold">READY</span>
+                <span className="text-[10px] font-mono text-[var(--pv-green)] font-bold">READY</span>
               </div>
 
-              <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
-                isDark ? 'bg-slate-900/60 border-slate-700/40' : 'bg-[#F8FAFC] border-[#DCE5EC]'
-              }`}>
+              <div className="p-2.5 rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] flex items-center justify-between">
                 <div>
                   <div className="font-bold text-[var(--text-primary)]">PST Executive Dispatcher</div>
                   <div className="text-[11px] text-[var(--text-secondary)]">Automated 4:00 PM briefing</div>
                 </div>
-                <span className="text-[10px] font-mono text-amber-700 dark:text-amber-400 font-bold">4:00 PM</span>
+                <span className="text-[10px] font-mono text-[var(--pv-amber)] font-bold">4:00 PM</span>
               </div>
             </div>
           </div>

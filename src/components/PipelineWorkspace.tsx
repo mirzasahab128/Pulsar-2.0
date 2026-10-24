@@ -80,10 +80,13 @@ export const PipelineWorkspace: React.FC = () => {
   ]);
   const [enrollSelection, setEnrollSelection] = useState<Record<string, string[]>>({});
 
-  const card = `rounded-2xl border p-4 sm:p-5 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200'}`;
-  const input = `w-full rounded-xl border px-3 py-2 text-sm ${isDark ? 'bg-slate-900 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-900'}`;
-  const btn = 'px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50';
-  const btnGhost = `px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`;
+  // Phase 2 theme: shared surfaces resolve to the theme tokens (which flip
+  // with the existing .dark switch) so Pipeline Ops reads as the same app
+  // as the themed dashboard. isDark is kept for remaining inline accents.
+  const card = 'pv-card rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card)] text-[var(--pv-ink)] p-4 sm:p-5';
+  const input = 'w-full rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] px-3 py-2 text-sm focus:border-[var(--pv-accent)] outline-none';
+  const btn = 'px-3 py-2 rounded-xl bg-gradient-to-r from-[#0B5D3B] to-[#1DA068] hover:brightness-110 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50';
+  const btnGhost = 'px-3 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] hover:bg-[var(--pv-mint)] text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50';
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -271,8 +274,8 @@ export const PipelineWorkspace: React.FC = () => {
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 cursor-pointer border ${tab === t.id
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-transparent'
-              : isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}>
+              ? 'bg-gradient-to-r from-[#0B5D3B] to-[#1DA068] text-white border-transparent'
+              : 'border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] hover:bg-[var(--pv-mint)]'}`}>
             {t.icon} {t.label}
           </button>
         ))}

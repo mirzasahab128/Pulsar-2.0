@@ -157,18 +157,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md transition-colors ${
       isDark ? 'bg-slate-950/85' : 'bg-slate-900/60'
     }`}>
-      <div className={`relative w-full max-w-2xl rounded-3xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6 border backdrop-blur-2xl transition-colors duration-300 ${
-        isDark 
-          ? 'bg-slate-900/95 border-slate-800 text-slate-100 shadow-[0_25px_80px_rgba(0,0,0,0.6)]' 
-          : 'bg-white/95 border-slate-200 text-slate-900 shadow-[0_25px_80px_rgba(15,23,42,0.15)]'
-      }`}>
+      <div className="pv-card relative w-full max-w-2xl rounded-3xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-6 border border-[var(--pv-border)] bg-[var(--pv-card)] text-[var(--pv-ink)]">
         
         {/* Header */}
         <div className={`flex items-center justify-between pb-4 border-b ${
           isDark ? 'border-slate-800' : 'border-slate-200'
         }`}>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-2xl bg-teal-500/10 text-teal-500 dark:text-teal-400 border border-teal-500/20">
+            <div className="p-2 rounded-2xl bg-[var(--pv-mint)] text-[var(--pv-green)] border border-[var(--pv-border)]">
               <Settings className="w-5 h-5" />
             </div>
             <div>
@@ -201,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           
           {/* Section 1: Manager Phone & Warm Transfer Route */}
           <div className="space-y-3">
-            <div className="text-xs font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-xs font-bold text-[var(--pv-accent)] uppercase tracking-wider flex items-center gap-1.5">
               <PhoneCall className="w-3.5 h-3.5" />
               1. Direct Phone Warm Transfer Bridge
             </div>
@@ -216,7 +212,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.managerPhone}
                   onChange={(e) => setFormData({ ...formData, managerPhone: e.target.value })}
                   placeholder="e.g. (555) 234-5678"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--pv-ink)] font-mono focus:outline-none focus:border-[var(--pv-accent)]"
                   required
                 />
                 <span className="text-[10px] text-slate-500 mt-1 block">
@@ -233,7 +229,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.managerName}
                   onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
                   placeholder="e.g. Alex Morgan"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                   required
                 />
               </div>
@@ -383,7 +379,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Section 2: AI Voice & Niche Value Proposition */}
           <div className="space-y-3 pt-4 border-t border-slate-800">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <span className="text-xs font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="text-xs font-bold text-[var(--pv-accent)] uppercase tracking-wider flex items-center gap-1.5">
                 <Volume2 className="w-3.5 h-3.5" />
                 2. AI Voice Persona & Value Proposition
               </span>
@@ -399,7 +395,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-bold transition cursor-pointer"
                     title="Open Business Niche Library to auto-populate from pre-configured templates"
                   >
-                    <Sparkles className="w-3 h-3 text-teal-400" />
+                    <Sparkles className="w-3 h-3 text-[var(--pv-accent)]" />
                     <span>Auto-Populate from Niche Library</span>
                   </button>
                 )}
@@ -421,7 +417,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <select
                   value={formData.voiceGender}
                   onChange={(e) => setFormData({ ...formData, voiceGender: e.target.value as any })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                 >
                   <option value="female">Sarah (Warm & Professional Female)</option>
                   <option value="male">David (Confident & Clear Male)</option>
@@ -449,7 +445,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   type="text"
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
             </div>
@@ -462,7 +458,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.valuePropCleanClaimRate}
                   onChange={(e) => setFormData({ ...formData, valuePropCleanClaimRate: e.target.value })}
                   placeholder="e.g. 98.4%"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-[var(--pv-ink)] font-mono focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
               <div>
@@ -472,7 +468,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.valuePropRevenueBoost}
                   onChange={(e) => setFormData({ ...formData, valuePropRevenueBoost: e.target.value })}
                   placeholder="e.g. 15-20% net collections increase"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-[var(--pv-ink)] font-mono focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
             </div>
@@ -481,7 +477,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Section 3: 4 PM PST Briefing & Email Dispatch Background Scheduler */}
           <div className="space-y-4 pt-4 border-t border-slate-800">
             <div className="flex items-center justify-between">
-              <div className="text-xs font-bold text-teal-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="text-xs font-bold text-[var(--pv-accent)] uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
                 3. Automated 4:00 PM PST Daily Stats & Call Performance Scheduler
               </div>
@@ -573,7 +569,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     managerEmail: e.target.value
                   })}
                   placeholder="e.g. you@company.com"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500 font-mono"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)] font-mono"
                   required
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
@@ -590,7 +586,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     type="time"
                     value={formData.dailySummaryScheduledTimePST || '16:00'}
                     onChange={(e) => setFormData({ ...formData, dailySummaryScheduledTimePST: e.target.value })}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500 font-mono font-bold"
+                    className="flex-1 bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3.5 py-2.5 text-xs text-[var(--pv-ink)] focus:outline-none focus:border-[var(--pv-accent)] font-mono font-bold"
                   />
                   <span className="px-2.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-teal-300 text-xs font-mono font-semibold">
                     PST / PT
@@ -651,7 +647,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <select
                   value={formData.telephonyCarrier}
                   onChange={(e) => setFormData({ ...formData, telephonyCarrier: e.target.value as any })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-[var(--pv-accent)]"
                 >
                   <option value="whatsapp_voip">WhatsApp Direct VoIP & Mobile Call Bridge (Active)</option>
                   <option value="browser_webrtc">Built-In High Fidelity Web Audio & Simulator</option>
@@ -668,7 +664,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   value={formData.sipEndpointUrl}
                   onChange={(e) => setFormData({ ...formData, sipEndpointUrl: e.target.value })}
                   placeholder="sip:sales-bridge@pstn.pulsebilling.com"
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-teal-500"
+                  className="w-full bg-[var(--pv-card-soft)] border border-[var(--pv-border)] rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
             </div>
@@ -678,7 +674,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="space-y-4 pt-4 border-t border-slate-800">
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-teal-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Webhook className="w-3.5 h-3.5 text-teal-400" />
+                <Webhook className="w-3.5 h-3.5 text-[var(--pv-accent)]" />
                 <span>5. Webhook Configuration (Third-Party CRM Integration)</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -761,7 +757,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Test Webhook Button & Feedback */}
                 <div className="pt-2 flex items-center justify-between flex-wrap gap-2 border-t border-slate-800">
                   <div className="text-[11px] text-slate-400 flex items-center gap-1.5 font-mono">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[var(--pv-accent)]" />
                     <span>Payload: Prospect ID, Practice, Specialty, Authority Level, Dispatched Note</span>
                   </div>
 

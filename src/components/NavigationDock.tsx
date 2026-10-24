@@ -225,10 +225,10 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
       className={`sticky top-16 sm:top-18 lg:top-20 z-30 transition-all duration-200 ${className}`}
     >
       {/* Container with backdrop blur & refined boundary */}
-      <div className={`rounded-2xl border backdrop-blur-2xl shadow-lg transition-colors duration-200 ${
-        isDark 
-          ? 'bg-slate-950/85 border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.6)]' 
-          : 'bg-white/90 border-slate-200/90 shadow-[0_8px_30px_rgba(15,23,42,0.06)]'
+      <div className={`rounded-[24px] border border-[var(--pv-border)] backdrop-blur-2xl shadow-[var(--pv-shadow)] transition-colors duration-200 ${
+        isDark
+          ? 'bg-[#121B14]/88'
+          : 'bg-white/88'
       }`}>
         
         {/* ============================================================== */}
@@ -249,7 +249,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               aria-label="Select module"
             >
               <div className="flex items-center gap-2.5 truncate">
-                <div className="p-1.5 rounded-lg bg-teal-500/15 text-teal-400 shrink-0">
+                <div className="p-1.5 rounded-lg bg-[var(--pv-mint)] text-[var(--pv-accent)] shrink-0">
                   <ActiveIcon className="w-4 h-4" />
                 </div>
                 <div className="text-left truncate">
@@ -259,7 +259,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                   <div className="text-xs font-bold truncate">
                     {activeItem.fullLabel}
                     {activeItem.count !== undefined && (
-                      <span className="ml-1.5 font-mono text-[11px] text-teal-400 font-bold">
+                      <span className="ml-1.5 font-mono text-[11px] text-[var(--pv-accent)] font-bold">
                         ({activeItem.count})
                       </span>
                     )}
@@ -268,7 +268,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="hidden sm:inline text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-teal-500/15 text-teal-300 font-semibold">
+                <span className="hidden sm:inline text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[var(--pv-mint)] text-[var(--pv-green)] font-semibold">
                   Switch
                 </span>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
@@ -284,7 +284,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               }`}>
                 <div className="px-2 py-1 text-[10px] font-mono uppercase text-slate-500 font-bold flex items-center justify-between">
                   <span>All 9 Core Modules</span>
-                  <span className="text-teal-400">1-Tap Navigation</span>
+                  <span className="text-[var(--pv-accent)]">1-Tap Navigation</span>
                 </div>
 
                 <div className="space-y-1 mt-1">
@@ -301,7 +301,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                         }}
                         className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left text-xs font-semibold transition cursor-pointer border min-h-[44px] ${
                           isActive
-                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-400 font-black shadow-md shadow-emerald-500/25 ring-1 ring-white/30'
+                            ? 'bg-gradient-to-r from-[var(--pv-green)] to-[var(--pv-accent)] text-white border-[var(--pv-accent)] font-black shadow-md shadow-[0_10px_22px_rgba(11,93,59,0.28)] ring-1 ring-white/30'
                             : isDark
                               ? 'bg-slate-850/50 hover:bg-slate-800 text-slate-300 border-transparent hover:border-slate-700'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-transparent hover:border-slate-200'
@@ -309,7 +309,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className={`p-1.5 rounded-lg shrink-0 ${
-                            isActive ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-400'
+                            isActive ? 'bg-white/20 text-white' : 'bg-[var(--pv-mint)] text-[var(--pv-accent)]'
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
@@ -318,7 +318,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                               <span>{tab.number}. {tab.fullLabel}</span>
                               {tab.count !== undefined && (
                                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold ${
-                                  isActive ? 'bg-white/25 text-white' : 'bg-teal-500/20 text-teal-300'
+                                  isActive ? 'bg-white/25 text-white' : 'bg-[var(--pv-mint)] text-[var(--pv-green)]'
                                 }`}>
                                   {tab.count}
                                 </span>
@@ -358,7 +358,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               title="Open full menu with settings, templates, and utilities"
               aria-label="Open full menu"
             >
-              <LayoutGrid className="w-4 h-4 text-teal-400" />
+              <LayoutGrid className="w-4 h-4 text-[var(--pv-accent)]" />
               <span className="hidden sm:inline font-display">Menu</span>
             </button>
           )}
@@ -393,7 +393,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             className={`pointer-events-none absolute left-2 md:left-10 top-2 bottom-2 w-8 z-[5] transition-opacity duration-200 ${
               canScrollLeft 
                 ? isDark 
-                  ? 'opacity-100 bg-gradient-to-r from-slate-950/90 to-transparent' 
+                  ? 'opacity-100 bg-gradient-to-r from-[#121B14]/90 to-transparent' 
                   : 'opacity-100 bg-gradient-to-r from-white/90 to-transparent' 
                 : 'opacity-0'
             }`} 
@@ -420,7 +420,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                   onClick={() => onSelectTab(tab.id)}
                   className={`group relative flex items-center gap-2 px-3 sm:px-3.5 lg:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-bold transition-all transform active:scale-98 whitespace-nowrap cursor-pointer shrink-0 min-h-[42px] ${
                     isActive
-                      ? 'bg-[#0D9488] text-white font-bold shadow-md shadow-teal-600/20 ring-1 ring-white/20'
+                      ? 'bg-[var(--pv-green)] text-white font-bold shadow-[0_10px_22px_rgba(11,93,59,0.28)] ring-1 ring-white/20'
                       : isDark
                         ? 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
@@ -431,7 +431,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
                 >
                   {/* Tab Icon */}
                   <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? 'text-white' : 'text-teal-400'
+                    isActive ? 'text-white' : 'text-[var(--pv-accent)]'
                   }`} />
 
                   {/* Responsive Labels */}
@@ -488,7 +488,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             className={`pointer-events-none absolute right-2 md:right-10 top-2 bottom-2 w-8 z-[5] transition-opacity duration-200 ${
               canScrollRight 
                 ? isDark 
-                  ? 'opacity-100 bg-gradient-to-l from-slate-950/90 to-transparent' 
+                  ? 'opacity-100 bg-gradient-to-l from-[#121B14]/90 to-transparent' 
                   : 'opacity-100 bg-gradient-to-l from-white/90 to-transparent' 
                 : 'opacity-0'
             }`} 
@@ -519,10 +519,10 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
       {/* MOBILE BOTTOM NAVIGATION BAR (Fixed at bottom on < 768px)      */}
       {/* Ergonomic 1-tap thumb navigation for mobile smartphones        */}
       {/* ============================================================== */}
-      <div className={`fixed bottom-0 left-0 right-0 z-40 md:hidden border-t backdrop-blur-2xl transition-colors duration-200 pb-[env(safe-area-inset-bottom)] ${
-        isDark 
-          ? 'bg-slate-950/95 border-white/[0.08] shadow-[0_-8px_25px_rgba(0,0,0,0.5)]' 
-          : 'bg-white/95 border-slate-200/90 shadow-[0_-8px_25px_rgba(15,23,42,0.06)]'
+      <div className={`fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-[var(--pv-border)] backdrop-blur-2xl transition-colors duration-200 pb-[env(safe-area-inset-bottom)] ${
+        isDark
+          ? 'bg-[#121B14]/95 shadow-[0_-8px_25px_rgba(0,0,0,0.5)]'
+          : 'bg-white/95 shadow-[0_-8px_25px_rgba(31,54,32,0.08)]'
       }`}>
         <div className="grid grid-cols-5 items-center h-15 px-1 max-w-lg mx-auto">
           {/* 1. Scraper / Leads */}
@@ -531,11 +531,11 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             onClick={() => onSelectTab('leads')}
             className={`flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition cursor-pointer min-h-[48px] ${
               activeTab === 'leads' 
-                ? 'text-teal-400 font-bold' 
+                ? 'text-[var(--pv-accent)] font-bold' 
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Building2 className={`w-5 h-5 ${activeTab === 'leads' ? 'text-teal-400' : ''}`} />
+            <Building2 className={`w-5 h-5 ${activeTab === 'leads' ? 'text-[var(--pv-accent)]' : ''}`} />
             <span className="text-[10px] font-medium leading-none">Scraper</span>
           </button>
 
@@ -545,11 +545,11 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             onClick={() => onSelectTab('call_studio')}
             className={`flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition cursor-pointer min-h-[48px] ${
               activeTab === 'call_studio' 
-                ? 'text-teal-400 font-bold' 
+                ? 'text-[var(--pv-accent)] font-bold' 
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <PhoneCall className={`w-5 h-5 ${activeTab === 'call_studio' ? 'text-teal-400' : ''}`} />
+            <PhoneCall className={`w-5 h-5 ${activeTab === 'call_studio' ? 'text-[var(--pv-accent)]' : ''}`} />
             <span className="text-[10px] font-medium leading-none">Dialer</span>
           </button>
 
@@ -559,11 +559,11 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             onClick={() => onSelectTab('pipeline')}
             className={`flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition cursor-pointer min-h-[48px] ${
               activeTab === 'pipeline' 
-                ? 'text-teal-400 font-bold' 
+                ? 'text-[var(--pv-accent)] font-bold' 
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <TrendingUp className={`w-5 h-5 ${activeTab === 'pipeline' ? 'text-teal-400' : ''}`} />
+            <TrendingUp className={`w-5 h-5 ${activeTab === 'pipeline' ? 'text-[var(--pv-accent)]' : ''}`} />
             <span className="text-[10px] font-medium leading-none">Pipeline</span>
           </button>
 
@@ -573,14 +573,14 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             onClick={() => onSelectTab('reminders')}
             className={`relative flex flex-col items-center justify-center gap-1 py-1 rounded-xl transition cursor-pointer min-h-[48px] ${
               activeTab === 'reminders' 
-                ? 'text-teal-400 font-bold' 
+                ? 'text-[var(--pv-accent)] font-bold' 
                 : isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <div className="relative">
-              <Bell className={`w-5 h-5 ${activeTab === 'reminders' ? 'text-teal-400' : ''}`} />
+              <Bell className={`w-5 h-5 ${activeTab === 'reminders' ? 'text-[var(--pv-accent)]' : ''}`} />
               {unreadTasksCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-amber-500 text-slate-950 font-black text-[9px] rounded-full flex items-center justify-center shadow-sm">
+                <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-[var(--pv-red)] text-white font-black text-[9px] rounded-full flex items-center justify-center shadow-sm">
                   {unreadTasksCount}
                 </span>
               )}
@@ -602,7 +602,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
               isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <LayoutGrid className="w-5 h-5 text-teal-400" />
+            <LayoutGrid className="w-5 h-5 text-[var(--pv-accent)]" />
             <span className="text-[10px] font-medium leading-none">More</span>
           </button>
         </div>

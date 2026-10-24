@@ -121,7 +121,7 @@ export const AIAgentFleetWorkspace: React.FC = () => {
       id: 'observe',
       label: '1. Observe',
       description: 'Passive telemetry only; reads data without proposing actions.',
-      badgeColor: 'text-slate-400'
+      badgeColor: 'text-[var(--pv-muted)]'
     },
     {
       id: 'recommend',
@@ -186,15 +186,15 @@ export const AIAgentFleetWorkspace: React.FC = () => {
               <ShieldCheck className="w-4 h-4" />
               <span>GUARDED AUTONOMY GOVERNANCE</span>
             </div>
-            <h1 className="text-2xl font-black text-white font-display tracking-tight">
+            <h1 className="text-2xl font-black text-[var(--pv-ink)] font-display tracking-tight">
               AI Agent Fleet Command Center
             </h1>
-            <p className="text-xs text-slate-400 max-w-2xl mt-1">
+            <p className="text-xs text-[var(--pv-muted)] max-w-2xl mt-1">
               Configure operational boundaries, human-in-the-loop sign-offs, and runtime health across all autonomous SDR agents.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-xs text-slate-300 bg-white/5 p-2 rounded-xl border border-white/10 shrink-0">
+          <div className="flex items-center gap-2 font-mono text-xs text-[var(--pv-ink)] bg-[var(--pv-card-soft)] p-2 rounded-xl border border-[var(--pv-border)] shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981]" />
             <span>5 Agents Configured · 0 Failures</span>
           </div>
@@ -243,7 +243,7 @@ export const AIAgentFleetWorkspace: React.FC = () => {
 
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-white">{agent.name}</span>
+                        <span className="font-bold text-sm text-[var(--pv-ink)]">{agent.name}</span>
                         <span className={`text-[10px] font-mono px-2 py-0.2 rounded border ${
                           agent.status === 'active' 
                             ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
@@ -252,7 +252,7 @@ export const AIAgentFleetWorkspace: React.FC = () => {
                           {agent.status.toUpperCase()}
                         </span>
                       </div>
-                      <div className="text-xs text-slate-400 mt-0.5">{agent.role}</div>
+                      <div className="text-xs text-[var(--pv-muted)] mt-0.5">{agent.role}</div>
                     </div>
                   </div>
 
@@ -284,16 +284,16 @@ export const AIAgentFleetWorkspace: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                <p className="text-xs text-[var(--pv-muted)] mt-3 leading-relaxed">
                   {agent.description}
                 </p>
 
                 {/* Agent Metrics & Autonomy Guardrail */}
                 <div className="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 text-slate-400">
-                    <span>Channel: <strong className="text-slate-200">{agent.channel.split('(')[0].trim()}</strong></span>
+                  <div className="flex items-center gap-3 text-[var(--pv-muted)]">
+                    <span>Channel: <strong className="text-[var(--pv-ink)]">{agent.channel.split('(')[0].trim()}</strong></span>
                     <span>·</span>
-                    <span>Tasks: <strong className="text-slate-200 font-mono tabular-nums">{agent.tasksCompleted}</strong></span>
+                    <span>Tasks: <strong className="text-[var(--pv-ink)] font-mono tabular-nums">{agent.tasksCompleted}</strong></span>
                     <span>·</span>
                     <span>Pending: <strong className="text-amber-400 font-mono tabular-nums">{agent.pendingApprovals}</strong></span>
                   </div>
@@ -315,14 +315,14 @@ export const AIAgentFleetWorkspace: React.FC = () => {
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
               <div className="flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-violet-400" />
-                <span className="font-bold text-sm text-white">Guardrail Inspector</span>
+                <span className="font-bold text-sm text-[var(--pv-ink)]">Guardrail Inspector</span>
               </div>
-              <span className="text-xs font-mono text-slate-400">{selectedAgent.name}</span>
+              <span className="text-xs font-mono text-[var(--pv-muted)]">{selectedAgent.name}</span>
             </div>
 
             {/* Guarded Autonomy Level Selector */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 block">
+              <label className="text-xs font-semibold text-[var(--pv-ink)] block">
                 Permitted Autonomy Tier:
               </label>
 
@@ -336,10 +336,10 @@ export const AIAgentFleetWorkspace: React.FC = () => {
                       className={`w-full text-left p-2.5 rounded-xl border text-xs transition cursor-pointer ${
                         isCurrent
                           ? isDark 
-                            ? 'bg-violet-600/20 border-violet-500/50 text-white shadow-sm' 
+                            ? 'bg-[var(--pv-violet-tint)] border-[var(--pv-border)] text-[var(--pv-violet)] shadow-sm' 
                             : 'bg-violet-100 border-violet-300 text-violet-950 font-semibold'
                           : isDark 
-                            ? 'bg-white/[0.02] border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]' 
+                            ? 'bg-white/[0.02] border-white/[0.06] text-[var(--pv-muted)] hover:text-[var(--pv-ink)] hover:bg-white/[0.04]' 
                             : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       }`}
                     >
@@ -347,7 +347,7 @@ export const AIAgentFleetWorkspace: React.FC = () => {
                         <span>{level.label}</span>
                         {isCurrent && <CheckCircle2 className="w-3.5 h-3.5 text-violet-400" />}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-1 leading-snug">
+                      <div className="text-[11px] text-[var(--pv-muted)] mt-1 leading-snug">
                         {level.description}
                       </div>
                     </button>
@@ -358,21 +358,21 @@ export const AIAgentFleetWorkspace: React.FC = () => {
 
             {/* Health & Diagnostic Telemetry */}
             <div className="pt-3 border-t border-white/[0.06] space-y-2.5 text-xs">
-              <div className="font-bold text-slate-300">Operational Telemetry</div>
+              <div className="font-bold text-[var(--pv-ink)]">Operational Telemetry</div>
 
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-[var(--pv-muted)]">
                 <span>Model Confidence Index:</span>
                 <span className="font-mono text-emerald-400 font-bold">{selectedAgent.confidenceScore}%</span>
               </div>
 
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-[var(--pv-muted)]">
                 <span>Agent Health Score:</span>
-                <span className="font-mono text-cyan-400 font-bold">{selectedAgent.healthScore}%</span>
+                <span className="font-mono text-[var(--pv-accent)] font-bold">{selectedAgent.healthScore}%</span>
               </div>
 
-              <div className="flex items-center justify-between text-slate-400">
+              <div className="flex items-center justify-between text-[var(--pv-muted)]">
                 <span>Last Telemetry Heartbeat:</span>
-                <span className="font-mono text-slate-300">{selectedAgent.lastActivity}</span>
+                <span className="font-mono text-[var(--pv-ink)]">{selectedAgent.lastActivity}</span>
               </div>
 
               {selectedAgent.lastError && (

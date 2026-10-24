@@ -39,6 +39,7 @@ import {
 import { Header } from './components/Header';
 import { SpatialSidebar } from './components/SpatialSidebar';
 import { AdminCommandCenter } from './components/AdminCommandCenter';
+import { AdminUnavailablePanel } from './components/AdminUnavailablePanel';
 import { PipelineWorkspace } from './components/PipelineWorkspace';
 import { SpatialCommandBar } from './components/SpatialCommandBar';
 import { SpatialCommandPalette } from './components/SpatialCommandPalette';
@@ -184,7 +185,7 @@ export default function App() {
   const [readOnlyNotice, setReadOnlyNotice] = useState<string | null>(null);
 
   // Authentication & Role-Based Access Control
-  const { role, isReadOnly, isMasterAdmin, workspaceId, profile, setQuickProfile, openAuthModal, updateWorkspaceNiche, access } = useAuth();
+  const { role, isReadOnly, isMasterAdmin, workspaceId, profile, setQuickProfile, openAuthModal, updateWorkspaceNiche, access, currentUser, signOut } = useAuth();
 
   // Phases 1–3: plan upgrade notice shown when a locked nav item is selected
   const [upgradeNotice, setUpgradeNotice] = useState<{ featureKey: string; label: string } | null>(null);
@@ -986,8 +987,8 @@ export default function App() {
 
   return (
     <AuthGate>
-      <div className={`relative min-h-screen flex flex-col font-sans selection:bg-teal-500 selection:text-white overflow-x-hidden transition-all duration-300 ${
-      effectiveSidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+      <div className={`pv-shell relative min-h-screen flex flex-col font-sans selection:bg-[#0B5D3B] selection:text-white overflow-x-hidden transition-all duration-300 ${
+      effectiveSidebarCollapsed ? 'lg:pl-[6.5rem]' : 'lg:pl-[17.5rem]'
     } bg-[var(--app-bg)] text-[var(--text-primary)] ${
       isDark ? 'quantum-bg-dark' : 'quantum-bg-light'
     }`}>
@@ -1033,6 +1034,13 @@ export default function App() {
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
         access={access}
         onLockedSelect={(featureKey, label) => setUpgradeNotice({ featureKey, label })}
+        signedInEmail={currentUser?.email ?? profile?.email ?? null}
+        accountRoleLabel={
+          access
+            ? (access.isMasterAdmin ? 'Master Admin' : (role === 'admin' ? 'Admin' : 'Customer'))
+            : 'Server offline'
+        }
+        onSignOut={() => { void signOut(); }}
       />
 
       {/* Plan upgrade notice (locked-not-hidden, §3e) */}
@@ -1092,32 +1100,26 @@ export default function App() {
       />
 
       {/* Role & Access Mode Status Banner - Liquid Glass */}
-      <div className={`w-full py-2 px-3 sm:px-4 border-b flex flex-wrap items-center justify-between gap-2 text-xs z-20 backdrop-blur-md transition-colors duration-200 ${
-        isReadOnly 
-          ? isDark ? 'bg-sky-950/60 border-sky-800/40 text-sky-200' : 'bg-sky-50 border-sky-200 text-sky-950'
-          : isDark ? 'bg-amber-950/40 border-amber-800/30 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-950'
+      <div className={`w-full py-2 px-3 sm:px-4 border-b border-[var(--pv-border)] flex flex-wrap items-center justify-between gap-2 text-xs z-20 backdrop-blur-md transition-colors duration-200 text-[var(--pv-ink)] ${
+        isReadOnly ? 'bg-[var(--pv-sky-tint)]' : 'bg-[var(--pv-amber-tint)]'
       }`}>
         <div className="flex flex-wrap items-center gap-2 min-w-0">
           {isReadOnly ? (
             <>
-              <span className={`px-2 py-0.5 rounded-full font-bold shrink-0 flex items-center gap-1 font-mono text-[10px] border shadow-sm ${
-                isDark ? 'bg-sky-500/20 text-sky-300 border-sky-500/40' : 'bg-sky-100 text-sky-900 border-sky-300'
-              }`}>
+              <span className="px-2 py-0.5 rounded-full font-bold shrink-0 flex items-center gap-1 font-mono text-[10px] border shadow-sm bg-[var(--pv-card)] text-[var(--pv-sky)] border-[var(--pv-border)]">
                 <Lock className="w-3 h-3" /> CUSTOMER READ-ONLY
               </span>
-              <span className="text-slate-600 dark:text-slate-300 text-xs hidden sm:inline truncate max-w-sm">
-                Tenant: <strong className="font-mono text-sky-700 dark:text-sky-300">{activeWorkspaceId}</strong> (Isolated DB).
+              <span className="text-[var(--pv-muted)] text-xs hidden sm:inline truncate max-w-sm">
+                Tenant: <strong className="font-mono text-[var(--pv-sky)]">{activeWorkspaceId}</strong> (Isolated DB).
               </span>
             </>
           ) : (
             <>
-              <span className={`px-2 py-0.5 rounded-full font-bold shrink-0 flex items-center gap-1 font-mono text-[10px] border shadow-sm ${
-                isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-amber-100 text-amber-900 border-amber-300'
-              }`}>
+              <span className="px-2 py-0.5 rounded-full font-bold shrink-0 flex items-center gap-1 font-mono text-[10px] border shadow-sm bg-[var(--pv-card)] text-[var(--pv-amber)] border-[var(--pv-border)]">
                 <Crown className="w-3 h-3" /> MASTER CONTROLLER
               </span>
-              <span className="text-slate-600 dark:text-slate-300 text-xs hidden sm:inline truncate max-w-sm">
-                Tenant: <strong className="font-mono text-amber-700 dark:text-amber-300">{activeWorkspaceId}</strong> (Unrestricted).
+              <span className="text-[var(--pv-muted)] text-xs hidden sm:inline truncate max-w-sm">
+                Tenant: <strong className="font-mono text-[var(--pv-amber)]">{activeWorkspaceId}</strong> (Unrestricted).
               </span>
             </>
           )}
@@ -1125,23 +1127,24 @@ export default function App() {
           {/* Active Niche Badge with Quick-Open */}
           <button
             onClick={() => setIsNicheLibraryOpen(true)}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold transition cursor-pointer border ${
-              isDark 
-                ? 'bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 border-violet-500/40' 
-                : 'bg-purple-100/90 hover:bg-purple-200/90 text-purple-900 border-purple-300'
-            }`}
+            className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold transition cursor-pointer border bg-[var(--pv-violet-tint)] hover:brightness-95 text-[var(--pv-violet)] border-[var(--pv-border)]"
             title="Click to open Business Niche Library"
           >
-            <Sparkles className="w-2.5 h-2.5 text-violet-500 shrink-0" />
+            <Sparkles className="w-2.5 h-2.5 text-[var(--pv-violet)] shrink-0" />
             <span className="truncate max-w-[130px] sm:max-w-none">Niche: {activeNicheTemplate.name.split('&')[0].trim()}</span>
-            <span className="underline ml-0.5 text-violet-600 dark:text-violet-400">Change</span>
+            <span className="underline ml-0.5 text-[var(--pv-violet)]">Change</span>
           </button>
         </div>
 
         {/* Right Quick Controls on Tablet & Desktop */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="px-2.5 py-1 rounded-xl font-mono text-[11px] font-bold border border-slate-700/60 bg-slate-800/40 text-slate-300">
-            {isMasterAdmin ? 'Master Admin' : 'Customer (Read-Only)'}
+          <span className="px-2.5 py-1 rounded-full font-mono text-[11px] font-bold border border-[var(--pv-border)] bg-[var(--pv-card)] text-[var(--pv-ink)]">
+            {/* Display only — the admin gate itself stays server-side.
+                access === null means the server is unreachable, not that
+                the account is a read-only customer. */}
+            {access
+              ? (access.isMasterAdmin ? 'Master Admin' : (isMasterAdmin ? 'Master Admin' : 'Customer (Read-Only)'))
+              : 'Server offline · access unverified'}
           </span>
         </div>
       </div>
@@ -1204,6 +1207,7 @@ export default function App() {
               onOpenSettings={() => setIsSettingsOpen(true)}
             />
           ) : (
+            <div className="pv-lg">
             <LiquidGlassDashboard
               stats={stats}
               leads={leads}
@@ -1226,6 +1230,7 @@ export default function App() {
               onOpenSettings={() => setIsSettingsOpen(true)}
               onToggleClassicDashboard={() => setUseClassicDashboard(!useClassicDashboard)}
             />
+            </div>
           )
         )}
 
@@ -1251,9 +1256,18 @@ export default function App() {
         )}
 
         {/* Admin Command Center (master admins only; the server enforces
-            the same gate on /api/admin/*). Route id stays admin_access. */}
-        {activeModule === 'admin_access' && access?.isMasterAdmin && (
-          <AdminCommandCenter />
+            the same gate on /api/admin/*). Route id stays admin_access.
+            Non-master signed-in users get an honest unavailable panel —
+            never the real center, never a client-side role grant. */}
+        {activeModule === 'admin_access' && (
+          access?.isMasterAdmin ? (
+            <AdminCommandCenter />
+          ) : (
+            <AdminUnavailablePanel
+              serverReachable={access !== null}
+              signedInEmail={currentUser?.email ?? profile?.email ?? null}
+            />
+          )
         )}
 
         {/* Phases 4–6: Pipeline Ops (lead registry, notes & tasks, email

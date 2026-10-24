@@ -401,7 +401,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-slate-400 hover:text-white text-xs cursor-pointer"
+            className="text-[var(--pv-muted)] hover:text-[var(--pv-ink)] text-xs cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -414,11 +414,11 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider text-cyan-400">
+            <div className="flex items-center gap-2 text-xs font-mono font-semibold tracking-wider text-[var(--pv-accent)]">
               <CheckSquare className="w-4 h-4" />
               <span>GOOGLE WORKSPACE · TASKS API INTEGRATION</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight flex items-center gap-2.5">
+            <h2 className="text-xl sm:text-2xl font-black text-[var(--pv-ink)] font-display tracking-tight flex items-center gap-2.5">
               <span>Google Tasks Cloud Synchronization</span>
               {googleAccessToken && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -427,7 +427,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 </span>
               )}
             </h2>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs text-[var(--pv-muted)] max-w-2xl leading-relaxed">
               Synchronize doctor appointments, follow-up calls, and outreach reminders across your personal Google Tasks, Google Calendar, and mobile devices in real time.
             </p>
           </div>
@@ -445,16 +445,16 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 <button
                   onClick={() => selectedListId && loadTasks(googleAccessToken, selectedListId)}
                   disabled={isLoading}
-                  className="p-2.5 rounded-xl border border-white/10 hover:border-cyan-500/30 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+                  className="p-2.5 rounded-xl border border-[var(--pv-border)] hover:border-[var(--pv-accent)] bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] text-[var(--pv-ink)] hover:text-[var(--pv-ink)] transition cursor-pointer"
                   title="Refresh tasks from Google"
                 >
-                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[var(--pv-accent)]' : ''}`} />
                 </button>
 
                 <button
                   onClick={handleSyncLocalToGoogle}
                   disabled={isLoading || localTasks.length === 0}
-                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white text-xs font-bold shadow-md transition cursor-pointer disabled:opacity-50"
                   title="Push local reminders to Google Tasks"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-violet-200" />
@@ -465,7 +465,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                   <button
                     onClick={handleImportToLocal}
                     disabled={tasks.length === 0}
-                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 hover:bg-[var(--pv-mint)] text-[var(--pv-green)] text-xs font-bold transition cursor-pointer disabled:opacity-50"
                     title="Import Google Tasks into local reminders list"
                   >
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -485,20 +485,20 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 {currentUser?.email ? currentUser.email.charAt(0).toUpperCase() : 'G'}
               </div>
               <div>
-                <span className="text-slate-400">Authenticated Account: </span>
-                <span className="font-semibold text-white">{currentUser?.email || 'Not signed in'}</span>
+                <span className="text-[var(--pv-muted)]">Authenticated Account: </span>
+                <span className="font-semibold text-[var(--pv-ink)]">{currentUser?.email || 'Not signed in'}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px]">
+            <div className="flex items-center gap-4 text-[var(--pv-muted)] font-mono text-[11px]">
               <div>
-                Active: <span className="text-cyan-400 font-bold">{activeCount}</span>
+                Active: <span className="text-[var(--pv-accent)] font-bold">{activeCount}</span>
               </div>
               <div>
                 Completed: <span className="text-emerald-400 font-bold">{completedCount}</span>
               </div>
               <div>
-                Total: <span className="text-white font-bold">{tasks.length}</span>
+                Total: <span className="text-[var(--pv-ink)] font-bold">{tasks.length}</span>
               </div>
             </div>
           </div>
@@ -510,11 +510,11 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
         <div className={`p-8 rounded-3xl border glass-base text-center space-y-4 ${
           isDark ? 'bg-slate-900/40 border-white/[0.05]' : 'bg-slate-50 border-slate-200'
         }`}>
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto text-cyan-400">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto text-[var(--pv-accent)]">
             <CheckSquare className="w-6 h-6" />
           </div>
-          <h3 className="text-lg font-bold text-white">Connect Your Google Workspace Account</h3>
-          <p className="text-xs text-slate-400 max-w-lg mx-auto">
+          <h3 className="text-lg font-bold text-[var(--pv-ink)]">Connect Your Google Workspace Account</h3>
+          <p className="text-xs text-[var(--pv-muted)] max-w-lg mx-auto">
             Authorize Google Tasks to enable two-way synchronization between Pulsar CRM action items and your Google Tasks account with permission from the app's users.
           </p>
           <div className="pt-2">
@@ -537,11 +537,11 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
             <div className="flex flex-wrap items-center gap-3">
               {/* TaskList Dropdown */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-mono">List:</span>
+                <span className="text-xs text-[var(--pv-muted)] font-mono">List:</span>
                 <select
                   value={selectedListId}
                   onChange={(e) => setSelectedListId(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl border border-white/10 bg-slate-800 text-white text-xs font-semibold focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs font-semibold focus:outline-none focus:border-[var(--pv-accent)] cursor-pointer"
                 >
                   {taskLists.map(list => (
                     <option key={list.id} value={list.id}>
@@ -552,7 +552,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
 
                 <button
                   onClick={() => setShowCreateList(true)}
-                  className="p-1.5 rounded-lg border border-white/10 hover:border-cyan-500/30 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition cursor-pointer"
+                  className="p-1.5 rounded-lg border border-[var(--pv-border)] hover:border-[var(--pv-accent)] bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] text-[var(--pv-ink)] hover:text-[var(--pv-ink)] transition cursor-pointer"
                   title="Create new Google Task list"
                 >
                   <FolderPlus className="w-3.5 h-3.5" />
@@ -560,11 +560,11 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center bg-black/30 p-1 rounded-xl border border-white/5 text-xs font-semibold">
+              <div className="flex items-center bg-[var(--pv-card-soft)] p-1 rounded-xl border border-white/5 text-xs font-semibold">
                 <button
                   onClick={() => setFilterState('all')}
                   className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                    filterState === 'all' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+                    filterState === 'all' ? 'bg-[var(--pv-mint)] text-[var(--pv-green)] font-bold' : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
                   }`}
                 >
                   All ({tasks.length})
@@ -572,7 +572,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 <button
                   onClick={() => setFilterState('needsAction')}
                   className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                    filterState === 'needsAction' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+                    filterState === 'needsAction' ? 'bg-[var(--pv-mint)] text-[var(--pv-green)] font-bold' : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
                   }`}
                 >
                   Pending ({activeCount})
@@ -580,7 +580,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 <button
                   onClick={() => setFilterState('completed')}
                   className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                    filterState === 'completed' ? 'bg-cyan-500/20 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+                    filterState === 'completed' ? 'bg-[var(--pv-mint)] text-[var(--pv-green)] font-bold' : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
                   }`}
                 >
                   Completed ({completedCount})
@@ -595,13 +595,13 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 placeholder="Search tasks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="px-3 py-1.5 rounded-xl border border-white/10 bg-black/20 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 w-44"
+                className="px-3 py-1.5 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] placeholder-[var(--pv-muted)] text-xs focus:outline-none focus:border-[var(--pv-accent)] w-44"
               />
 
               {/* Add Task Button */}
               <button
                 onClick={() => setShowCreateTask(true)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md transition cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white text-xs font-bold shadow-md transition cursor-pointer shrink-0"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>New Task</span>
@@ -630,14 +630,14 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
               }`}
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-cyan-400" />
+                <h4 className="text-sm font-bold text-[var(--pv-ink)] flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-[var(--pv-accent)]" />
                   <span>Create New Task in Google Tasks</span>
                 </h4>
                 <button
                   type="button"
                   onClick={() => setShowCreateTask(false)}
-                  className="text-slate-400 hover:text-white cursor-pointer"
+                  className="text-[var(--pv-muted)] hover:text-[var(--pv-ink)] cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -645,36 +645,36 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[11px] font-mono text-slate-400">Task Title *</label>
+                  <label className="text-[11px] font-mono text-[var(--pv-muted)]">Task Title *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Follow-up demo call with Dr. Henderson"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-black/30 text-white text-xs focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs focus:outline-none focus:border-[var(--pv-accent)]"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-mono text-slate-400">Due Date (Optional)</label>
+                  <label className="text-[11px] font-mono text-[var(--pv-muted)]">Due Date (Optional)</label>
                   <input
                     type="date"
                     value={newDueDate}
                     onChange={(e) => setNewDueDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-white/10 bg-black/30 text-white text-xs focus:outline-none focus:border-cyan-500"
+                    className="w-full px-3 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs focus:outline-none focus:border-[var(--pv-accent)]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-mono text-slate-400">Notes / Agenda / Doctor Contact Details</label>
+                <label className="text-[11px] font-mono text-[var(--pv-muted)]">Notes / Agenda / Doctor Contact Details</label>
                 <textarea
                   rows={2}
                   placeholder="e.g. Phone: 415-555-0199 | Practice: Bay Area Cardiology | Agenda: Review 98% clean claim recovery proposal"
                   value={newNotes}
                   onChange={(e) => setNewNotes(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-black/30 text-white text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
 
@@ -682,14 +682,14 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateTask(false)}
-                  className="px-3.5 py-1.5 rounded-xl border border-white/10 text-slate-300 text-xs font-semibold hover:bg-white/5 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl border border-[var(--pv-border)] text-[var(--pv-ink)] text-xs font-semibold hover:bg-[var(--pv-card-soft)] cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newTitle.trim()}
-                  className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow-md cursor-pointer disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white text-xs font-bold transition shadow-md cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting && <RefreshCw className="w-3 h-3 animate-spin" />}
                   <span>Save to Google Tasks</span>
@@ -713,20 +713,20 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                   placeholder="New Google Task List Name (e.g. Q4 Executive Outreach)"
                   value={newListTitle}
                   onChange={(e) => setNewListTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-white/10 bg-black/30 text-white text-xs focus:outline-none focus:border-cyan-500"
+                  className="w-full px-3 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs focus:outline-none focus:border-[var(--pv-accent)]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting || !newListTitle.trim()}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white text-xs font-bold transition cursor-pointer"
               >
                 Create List
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateList(false)}
-                className="p-2 text-slate-400 hover:text-white cursor-pointer"
+                className="p-2 text-[var(--pv-muted)] hover:text-[var(--pv-ink)] cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -736,17 +736,17 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
           {/* Tasks List */}
           <div className="space-y-2.5">
             {isLoading && tasks.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-xs space-y-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-cyan-400 mx-auto" />
+              <div className="p-12 text-center text-[var(--pv-muted)] text-xs space-y-2">
+                <RefreshCw className="w-6 h-6 animate-spin text-[var(--pv-accent)] mx-auto" />
                 <p>Loading tasks from Google Tasks...</p>
               </div>
             ) : filteredTasks.length === 0 ? (
               <div className={`p-10 rounded-2xl border glass-base text-center space-y-2 ${
                 isDark ? 'bg-slate-900/30 border-white/[0.05]' : 'bg-slate-50 border-slate-200'
               }`}>
-                <CheckSquare className="w-8 h-8 text-slate-500 mx-auto" />
-                <p className="text-sm font-semibold text-white">No tasks found</p>
-                <p className="text-xs text-slate-400">
+                <CheckSquare className="w-8 h-8 text-[var(--pv-muted)] mx-auto" />
+                <p className="text-sm font-semibold text-[var(--pv-ink)]">No tasks found</p>
+                <p className="text-xs text-[var(--pv-muted)]">
                   {searchQuery ? 'No tasks match your search query.' : 'This Google Task list is currently empty. Click "New Task" or push Pulsar reminders.'}
                 </p>
               </div>
@@ -762,8 +762,8 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                     key={task.id}
                     className={`p-4 rounded-2xl border glass-standard transition-all group flex items-start justify-between gap-4 ${
                       isCompleted 
-                        ? 'opacity-60 bg-black/20 border-white/[0.03]' 
-                        : 'hover:border-cyan-500/30 bg-slate-900/40 border-white/[0.08]'
+                        ? 'opacity-60 bg-[var(--pv-card-soft)] border-white/[0.03]' 
+                        : 'hover:border-[var(--pv-accent)] bg-slate-900/40 border-white/[0.08]'
                     }`}
                   >
                     <div className="flex items-start gap-3.5 flex-1 min-w-0">
@@ -773,7 +773,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                         className={`w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 mt-0.5 transition cursor-pointer ${
                           isCompleted
                             ? 'bg-emerald-500 border-emerald-400 text-slate-950'
-                            : 'border-slate-500/60 hover:border-cyan-400 bg-white/5'
+                            : 'border-slate-500/60 hover:border-cyan-400 bg-[var(--pv-card-soft)]'
                         }`}
                         title={isCompleted ? 'Mark as pending' : 'Mark as completed'}
                       >
@@ -784,13 +784,13 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className={`text-sm font-semibold tracking-tight ${
-                            isCompleted ? 'line-through text-slate-400' : 'text-white'
+                            isCompleted ? 'line-through text-[var(--pv-muted)]' : 'text-[var(--pv-ink)]'
                           }`}>
                             {task.title}
                           </span>
 
                           {task.due && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-medium bg-cyan-500/10 text-[var(--pv-accent)] border border-cyan-500/20">
                               <Calendar className="w-3 h-3" />
                               <span>{new Date(task.due).toLocaleDateString()}</span>
                             </span>
@@ -804,7 +804,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
                         </div>
 
                         {task.notes && (
-                          <p className="text-xs text-slate-400 whitespace-pre-line leading-relaxed font-sans line-clamp-2">
+                          <p className="text-xs text-[var(--pv-muted)] whitespace-pre-line leading-relaxed font-sans line-clamp-2">
                             {task.notes}
                           </p>
                         )}
@@ -826,7 +826,7 @@ export const GoogleTasksWorkspace: React.FC<GoogleTasksWorkspaceProps> = ({
 
                       <button
                         onClick={() => promptDeleteTask(task)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer opacity-70 group-hover:opacity-100"
+                        className="p-1.5 rounded-lg text-[var(--pv-muted)] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer opacity-70 group-hover:opacity-100"
                         title="Delete from Google Tasks"
                       >
                         <Trash2 className="w-4 h-4" />

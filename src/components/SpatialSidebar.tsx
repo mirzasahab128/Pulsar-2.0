@@ -31,10 +31,10 @@ import {
   ChevronRight,
   ChevronDown,
   Pin,
-  PinOff
+  PinOff,
+  LogOut
 } from 'lucide-react';
 import { PulsarSpatialModule } from '../types';
-import { useTheme } from '../context/ThemeContext';
 import { PulsarGalaxy } from './PulsarGalaxy';
 import { AccessInfo } from '../services/api';
 
@@ -56,6 +56,12 @@ interface SpatialSidebarProps {
   // locked-not-hidden rendering of features outside the user's plan (§3e).
   access?: AccessInfo | null;
   onLockedSelect?: (featureKey: string, label: string) => void;
+  // Phase 2: signed-in identity for the footer account block + Sign out,
+  // and for showing the Admin entry to signed-in non-masters (who land on
+  // the honest unavailable panel, never the real center).
+  signedInEmail?: string | null;
+  accountRoleLabel?: string;
+  onSignOut?: () => void;
 }
 
 interface NavGroup {
@@ -83,10 +89,11 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
   isMobileOpen = false,
   onCloseMobile,
   access,
-  onLockedSelect
+  onLockedSelect,
+  signedInEmail = null,
+  accountRoleLabel = 'Customer',
+  onSignOut
 }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   // Navigation Groupings matching Spatial Operating System specification
   const navGroups: NavGroup[] = [
@@ -150,9 +157,14 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
     }
   ];
 
-  // Phases 1–3 (§3): the Admin Command Center item exists only for master
-  // admins. It is separate from IntegrationsAdminWorkspace — do not merge.
-  if (access?.isMasterAdmin) {
+  // Phases 1–3 (§3) + Phase 2: the Admin Command Center item is visible to
+  // any signed-in user so the center is discoverable instead of silently
+  // absent. It is separate from IntegrationsAdminWorkspace — do not merge.
+  // Non-masters land on the honest unavailable panel (App.tsx); this menu
+  // entry grants nothing — the real center still requires server-verified
+  // master admin. A lock mark shows on the entry until then.
+  const adminLocked = !!signedInEmail && !access?.isMasterAdmin;
+  if (signedInEmail) {
     const adminGroup = navGroups.find(g => g.label === 'Administration');
     if (adminGroup && !adminGroup.items.some(i => i.id === 'admin_access')) {
       adminGroup.items.unshift({ id: 'admin_access', label: 'Admin Command Center', icon: ShieldCheck, badgeVariant: 'violet' });
@@ -186,20 +198,17 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
         />
       )}
 
-      {/* Spatial Sidebar Shell */}
+      {/* Spatial Sidebar Shell — Phase 1 theme: floating rail (rounded card,
+          inset on desktop). Pin/collapse/brand behaviors unchanged. */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col transition-all duration-300 select-none ${
+        className={`pv-rail ${isCollapsed ? 'is-collapsed' : ''} fixed top-0 bottom-0 left-0 lg:top-3 lg:bottom-3 lg:left-3 z-40 flex flex-col transition-all duration-300 select-none ${
           isCollapsed ? 'w-20' : 'w-64'
         } ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        } ${
-          isDark 
-            ? 'bg-[#111C2E]/95 backdrop-blur-2xl border-r border-slate-700/40 text-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.5)]' 
-            : 'bg-white/95 backdrop-blur-2xl border-r border-[#DCE5EC] text-[#172338] shadow-[0_12px_36px_rgba(23,35,56,0.06)]'
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800/80 shrink-0">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--pv-border)] shrink-0">
           {/* Brand button: loads the Dashboard (command_center) */}
           <button
             type="button"
@@ -218,35 +227,35 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
             {!isCollapsed && (
               <div className="truncate">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm tracking-tight font-display text-slate-900 dark:text-white group-hover:underline decoration-teal-400/70 underline-offset-4">
+                  <span className="font-bold text-sm tracking-tight font-display text-[var(--pv-ink)] group-hover:underline decoration-[var(--pv-accent)] underline-offset-4">
                     Pulsar
                   </span>
-                  <span className="text-[10px] font-mono font-medium text-teal-600 dark:text-teal-400">
+                  <span className="text-[10px] font-mono font-medium text-[var(--pv-accent)]">
                     Growth OS
                   </span>
                 </div>
-                <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">Revenue Intelligence</div>
+                <div className="text-[10px] text-[var(--pv-muted)] truncate">Revenue Intelligence</div>
               </div>
             )}
           </button>
 
-          {/* Desktop Pin + Collapse Controls */}
-          <div className="hidden lg:flex items-center gap-1 shrink-0">
-            {/* Pin toggle — shown in the wide state; while pinned the
-                sidebar is locked open, so this is also where you unpin. */}
-            {onTogglePin && !isCollapsed && (
+          {/* Pin + Collapse Controls — Phase 2: visible in EVERY state.
+              Previously the pin toggle rendered only in the wide state, so
+              from the collapsed rail there was no way to pin, and on mobile
+              (hidden lg:flex) there was no expand/pin control at all.
+              Pinning from the rail also expands it (pinned ⇒ wide). */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Pin toggle — always offered; while pinned the sidebar is
+                locked open, so this is also where you unpin. */}
+            {onTogglePin && (
               <button
                 onClick={onTogglePin}
                 className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
                   isPinned
-                    ? isDark
-                      ? 'bg-teal-500/20 border-teal-500/50 text-teal-300 shadow-[0_0_10px_rgba(20,184,166,0.25)]'
-                      : 'bg-teal-100 border-teal-400 text-teal-700'
-                    : isDark 
-                      ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-white' 
-                      : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600 hover:text-slate-900'
+                    ? 'bg-[var(--pv-mint)] border-[var(--pv-mint-2)] text-[var(--pv-green)] shadow-sm'
+                    : 'bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
                 }`}
-                title={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                title={isPinned ? 'Unpin sidebar (collapse allowed again)' : 'Pin sidebar open'}
                 aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
                 aria-pressed={isPinned}
               >
@@ -258,11 +267,7 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
             {!isPinned && (
               <button
                 onClick={onToggleCollapse}
-                className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
-                  isDark 
-                    ? 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-400 hover:text-white' 
-                    : 'bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-600 hover:text-slate-900'
-                }`}
+                className="flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]"
                 title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
               >
                 {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
@@ -276,7 +281,7 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-1">
               {!isCollapsed && (
-                <div className="px-3 pb-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-slate-500">
+                <div className="px-3 pb-1 pv-group-label">
                   {group.label}
                 </div>
               )}
@@ -292,55 +297,51 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
                       key={item.id}
                       onClick={() => handleItemClick(item)}
                       title={locked ? 'Not in your plan' : (isCollapsed ? item.label : undefined)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer relative group ${
-                        isActive
-                          ? isDark
-                            ? 'glass-active bg-violet-600/20 text-white border border-violet-500/40 shadow-[0_0_20px_rgba(139,92,246,0.25)]'
-                            : 'bg-violet-100 text-violet-950 font-semibold border border-violet-300 shadow-sm'
-                          : isDark
-                            ? 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
+                      className={`pv-nav-btn group ${isActive ? 'active' : ''} ${locked ? 'locked' : ''}`}
                     >
-                      {/* Active Left Indicator Bar */}
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r bg-violet-400 shadow-[0_0_8px_#8b5cf6]" />
-                      )}
-
                       <div className={`shrink-0 transition-transform duration-200 group-hover:scale-110 ${
-                        isActive 
-                          ? 'text-violet-400' 
-                          : isDark ? 'text-slate-400 group-hover:text-slate-200' : 'text-slate-500 group-hover:text-slate-800'
+                        isActive
+                          ? 'text-white'
+                          : 'text-[var(--pv-muted)] group-hover:text-[var(--pv-green)]'
                       }`}>
-                        <Icon className="w-4 h-4" />
+                        <Icon className="w-[18px] h-[18px]" />
                       </div>
 
+                      {/* Collapsed rail: red count badge on the icon button */}
+                      {isCollapsed && item.count !== undefined && item.count > 0 && (
+                        <span className="pv-count on-rail">{item.count > 99 ? '99+' : item.count}</span>
+                      )}
+
                       {!isCollapsed && (
-                        <div className="flex-1 flex items-center justify-between text-left truncate">
+                        <div className="flex-1 flex items-center justify-between text-left truncate min-w-0">
                           <span className={`truncate ${locked ? 'opacity-70' : ''}`}>{item.label}</span>
 
                           {/* Plan lock (locked-not-hidden, §3e) */}
                           {locked && (
-                            <Lock className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-2" />
+                            <Lock className="w-3.5 h-3.5 text-[var(--pv-amber)] shrink-0 ml-2" />
                           )}
 
-                          {/* Unboxed Zero-Pill Tabular Counter */}
+                          {/* Admin entry lock (Phase 2): visible but not
+                              granted until the server verifies master admin */}
+                          {item.id === 'admin_access' && adminLocked && (
+                            <Lock className="w-3.5 h-3.5 text-[var(--pv-amber)] shrink-0 ml-2" />
+                          )}
+
+                          {/* Theme count badge (red pill, as in the approved theme) */}
                           {item.count !== undefined && item.count > 0 && (
-                            <span className="font-mono tabular-nums text-[11px] font-semibold text-slate-400 pl-2">
-                              {item.count}
-                            </span>
+                            <span className="pv-count ml-2 shrink-0">{item.count > 99 ? '99+' : item.count}</span>
                           )}
 
                           {/* Live Indicator Dot for Active AI or Campaigns */}
                           {item.badgeVariant && !item.count && (
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              item.badgeVariant === 'violet' 
-                                ? 'bg-violet-400 shadow-[0_0_6px_#8b5cf6]' 
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              item.badgeVariant === 'violet'
+                                ? 'bg-[var(--pv-violet)]'
                                 : item.badgeVariant === 'cyan'
-                                  ? 'bg-cyan-400 shadow-[0_0_6px_#06b6d4]'
+                                  ? 'bg-[var(--pv-sky)]'
                                   : item.badgeVariant === 'amber'
-                                    ? 'bg-amber-400 shadow-[0_0_6px_#f59e0b]'
-                                    : 'bg-emerald-400 shadow-[0_0_6px_#10b981]'
+                                    ? 'bg-[var(--pv-amber-strong)]'
+                                    : 'bg-[var(--pv-bright)]'
                             }`} />
                           )}
                         </div>
@@ -354,20 +355,46 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
         </div>
 
         {/* Bottom Operating State & Tenant Badge */}
-        <div className="p-3 border-t border-white/[0.06] shrink-0">
-          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition ${
-            isDark 
-              ? 'bg-white/[0.03] border-white/[0.06]' 
-              : 'bg-slate-50 border-slate-200'
-          }`}>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#10b981] shrink-0" />
+        <div className="p-3 border-t border-[var(--pv-border)] shrink-0 space-y-2">
+          <div className="pv-soft p-2.5 flex items-center gap-2.5 transition">
+            <span className="w-2 h-2 rounded-full bg-[var(--pv-bright)] animate-pulse shadow-[0_0_8px_var(--pv-bright)] shrink-0" />
             {!isCollapsed && (
               <div className="truncate text-left flex-1">
-                <div className="text-[11px] font-bold text-slate-200 truncate">Autonomous Hub</div>
-                <div className="text-[10px] text-slate-500 font-mono">PST Ready · v2.5</div>
+                <div className="text-[11px] font-bold text-[var(--pv-ink)] truncate">Autonomous Hub</div>
+                <div className="text-[10px] text-[var(--pv-muted)] font-mono">PST Ready · v2.5</div>
               </div>
             )}
           </div>
+
+          {/* Phase 2: signed-in account + Sign out. Previously signOut
+              lived only in Header.tsx, which is never rendered, so the
+              app had no visible logout at all. */}
+          {signedInEmail && (
+            <div className="pv-soft p-2.5 flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-full bg-[var(--pv-mint)] text-[var(--pv-green)] flex items-center justify-center font-bold text-[11px] shrink-0">
+                {signedInEmail.charAt(0).toUpperCase()}
+              </span>
+              {!isCollapsed && (
+                <div className="truncate text-left flex-1 min-w-0">
+                  <div className="text-[11px] font-bold text-[var(--pv-ink)] truncate" title={signedInEmail}>
+                    {signedInEmail}
+                  </div>
+                  <div className="text-[10px] text-[var(--pv-muted)] font-mono truncate">{accountRoleLabel}</div>
+                </div>
+              )}
+              {onSignOut && (
+                <button
+                  type="button"
+                  onClick={onSignOut}
+                  className="flex items-center justify-center w-7 h-7 rounded-lg border border-[var(--pv-border)] bg-[var(--pv-card-soft)] hover:bg-[var(--pv-red-tint)] text-[var(--pv-muted)] hover:text-[var(--pv-red)] transition cursor-pointer shrink-0"
+                  title="Sign out"
+                  aria-label="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </aside>
     </>

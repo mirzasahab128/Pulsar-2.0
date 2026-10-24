@@ -146,17 +146,17 @@ export const IntegrationsAdminWorkspace: React.FC<IntegrationsAdminWorkspaceProp
             <Network className="w-4 h-4" />
             <span>INFRASTRUCTURE & SERVICE DEPENDENCY MATRIX</span>
           </div>
-          <h1 className="text-2xl font-black text-white font-display tracking-tight">
+          <h1 className="text-2xl font-black text-[var(--pv-ink)] font-display tracking-tight">
             Integrations & API Health
           </h1>
-          <p className="text-xs text-slate-400 max-w-xl mt-1">
+          <p className="text-xs text-[var(--pv-muted)] max-w-xl mt-1">
             Real connection statuses, external provider accounts, credential requirements, and security compliance boundaries.
           </p>
         </div>
 
         <button
           onClick={onOpenSettings}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-md transition cursor-pointer shrink-0"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--pv-green)] hover:bg-[var(--pv-accent)] text-white font-bold text-xs shadow-md transition cursor-pointer shrink-0"
         >
           <Key className="w-4 h-4" />
           <span>Configure Credentials</span>
@@ -181,26 +181,26 @@ export const IntegrationsAdminWorkspace: React.FC<IntegrationsAdminWorkspaceProp
           >
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-sm text-white">{item.name}</span>
+                <span className="font-bold text-sm text-[var(--pv-ink)]">{item.name}</span>
                 <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold uppercase ${
                   item.status === 'connected'
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
                     : item.status === 'configured'
-                      ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                      ? 'bg-cyan-500/15 text-[var(--pv-green)] border-cyan-500/30'
                       : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 }`}>
                   {item.status.replace('_', ' ')}
                 </span>
               </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-[var(--pv-muted)] leading-relaxed">
                 {item.description}
               </p>
 
               <div className="pt-2 border-t border-white/[0.06] space-y-1">
-                <div className="text-[10px] font-mono text-slate-500 uppercase">Required Credentials:</div>
+                <div className="text-[10px] font-mono text-[var(--pv-muted)] uppercase">Required Credentials:</div>
                 {item.requiredCredentials.map((cred, idx) => (
-                  <div key={idx} className="text-xs text-slate-300 font-mono flex items-center gap-1.5">
+                  <div key={idx} className="text-xs text-[var(--pv-ink)] font-mono flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
                     <span className="truncate">{cred}</span>
                   </div>
@@ -212,7 +212,7 @@ export const IntegrationsAdminWorkspace: React.FC<IntegrationsAdminWorkspaceProp
               <button
                 onClick={() => handleTestConnection(item.id)}
                 disabled={testingId === item.id}
-                className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer disabled:opacity-50"
+                className="flex items-center gap-1.5 text-xs text-[var(--pv-accent)] hover:text-[var(--pv-green)] font-semibold cursor-pointer disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${testingId === item.id ? 'animate-spin' : ''}`} />
                 <span>Test Handshake</span>
@@ -223,7 +223,7 @@ export const IntegrationsAdminWorkspace: React.FC<IntegrationsAdminWorkspaceProp
                   href={item.docsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-200"
+                  className="flex items-center gap-1 text-[11px] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]"
                 >
                   <span>Portal</span>
                   <ExternalLink className="w-3 h-3" />

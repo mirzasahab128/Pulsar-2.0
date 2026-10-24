@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./styles/liquid-glass.css";
+@import "./styles/theme-vessa.css";
 
 @custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
 @variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
@@ -31,7 +32,7 @@
     --pure-white: #FFFFFF;
 
     /* Light Mode Design Tokens */
-    --app-bg: #F3F7FA;
+    --app-bg: #EDF0E1;
     --surface-primary: #FFFFFF;
     --surface-secondary: #EAF5F7;
     --surface-glass: rgba(255, 255, 255, 0.88);
@@ -63,8 +64,8 @@
 
   .dark,
   [data-theme="dark"] {
-    /* Dark Mode Tokens — Deep Space Intelligence */
-    --app-bg: #0B1220;
+    /* Dark Mode Tokens — Deep green-ink (Field & Sage theme) */
+    --app-bg: #0A100C;
     --surface-primary: #111C2E;
     --surface-secondary: #17263B;
     --surface-glass: rgba(17, 28, 46, 0.78);
@@ -312,17 +313,17 @@
 
 /* Ambient Cyber Radiance Background Gradients */
 .quantum-bg-dark {
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.16) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(37, 99, 235, 0.16) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.10) 0px, transparent 60%);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(37, 184, 120, 0.13) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(29, 160, 104, 0.11) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(11, 93, 59, 0.14) 0px, transparent 60%);
 }
 
 .quantum-bg-light {
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(37, 99, 235, 0.08) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 60%);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(29, 160, 104, 0.09) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(11, 93, 59, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(205, 231, 212, 0.35) 0px, transparent 60%);
 }
 
 /* Custom fine-line scrollbars */

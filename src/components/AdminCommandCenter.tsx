@@ -83,12 +83,12 @@ export const AdminCommandCenter: React.FC = () => {
   // Approval plan picks (uid -> planId)
   const [approvalPlan, setApprovalPlan] = useState<Record<string, string>>({});
 
-  const cardCls = `rounded-2xl border backdrop-blur-xl ${
-    isDark ? 'bg-[#111C2E]/90 border-slate-700/40 text-[#F1F5F9]' : 'bg-white/95 border-[#DCE5EC] text-[#172338] shadow-sm'
-  }`;
-  const inputCls = `px-2.5 py-1.5 rounded-lg border text-xs outline-none ${
-    isDark ? 'bg-slate-900/60 border-slate-700 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-  }`;
+  // Phase 2 theme: cards/inputs resolve to the theme tokens (which flip
+  // with the existing .dark switch), so the admin screens read as the
+  // same app as the themed dashboard. isDark is kept for the remaining
+  // inline accents below.
+  const cardCls = 'pv-card rounded-2xl border border-[var(--pv-border)] bg-[var(--pv-card)] text-[var(--pv-ink)]';
+  const inputCls = 'px-2.5 py-1.5 rounded-lg border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-[var(--pv-ink)] text-xs outline-none focus:border-[var(--pv-accent)]';
   const btnCls = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer';
 
   const loadAll = useCallback(async () => {
@@ -255,8 +255,8 @@ export const AdminCommandCenter: React.FC = () => {
                 onClick={() => setTab(t.id)}
                 className={`${btnCls} flex items-center gap-1.5 ${
                   active
-                    ? 'bg-violet-600 text-white shadow'
-                    : isDark ? 'bg-white/5 text-slate-300 hover:bg-white/10' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-[var(--pv-green)] text-white shadow'
+                    : 'bg-[var(--pv-card-soft)] text-[var(--pv-muted)] hover:bg-[var(--pv-mint)] hover:text-[var(--pv-ink)]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

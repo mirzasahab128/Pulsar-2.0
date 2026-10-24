@@ -36,21 +36,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('light');
       body.classList.add('dark', 'theme-dark');
       body.classList.remove('light', 'theme-light');
-      body.style.backgroundColor = '#0B1220';
+      body.style.backgroundColor = '#0A100C';
       body.style.color = '#F1F5F9';
     } else {
       root.classList.remove('dark');
       root.classList.add('light');
       body.classList.remove('dark', 'theme-dark');
       body.classList.add('light', 'theme-light');
-      body.style.backgroundColor = '#F3F7FA';
+      body.style.backgroundColor = '#EDF0E1';
       body.style.color = '#172338';
     }
 
     // Update mobile PWA / browser theme-color meta tag
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', theme === 'dark' ? '#0B1220' : '#F3F7FA');
+      metaThemeColor.setAttribute('content', theme === 'dark' ? '#0A100C' : '#EDF0E1');
     }
 
     try {

@@ -20,11 +20,11 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center lg-aurora-bg bg-[var(--lg-bg-base)] text-[var(--lg-text-primary)]">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white mb-4 animate-pulse">
+      <div className="pv-shell min-h-screen w-full flex flex-col items-center justify-center text-[var(--pv-ink)]">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0B5D3B] to-[#1DA068] flex items-center justify-center shadow-lg shadow-emerald-500/25 text-white mb-4 animate-pulse">
           <span className="font-extrabold text-xl">P</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[var(--lg-text-secondary)]">
+        <div className="flex items-center gap-2 text-sm text-[var(--pv-muted)]">
           <span className="w-3.5 h-3.5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           <span>Verifying security session...</span>
         </div>
@@ -43,44 +43,48 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   // does not block — enforcement lives server-side.
   if (access && access.status === 'pending_approval') {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center lg-aurora-bg bg-[var(--lg-bg-base)] text-[var(--lg-text-primary)] px-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25 text-white mb-4">
-          <Clock className="w-6 h-6" />
+      <div className="pv-shell min-h-screen w-full flex flex-col items-center justify-center text-[var(--pv-ink)] px-4">
+        <div className="pv-card p-8 flex flex-col items-center max-w-md w-full text-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25 text-white mb-4">
+            <Clock className="w-6 h-6" />
+          </div>
+          <h1 className="text-lg font-bold mb-2">Your account is awaiting approval</h1>
+          <p className="text-sm text-[var(--pv-muted)] mb-6">
+            Thanks for requesting access. A Pulsar administrator needs to approve your account and
+            assign a plan before you can access the workspace. Sign back in to check your status —
+            once approved, this screen clears automatically.
+          </p>
+          <button
+            type="button"
+            onClick={signOut}
+            className="px-4 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-sm font-semibold flex items-center gap-2 hover:bg-[var(--pv-mint)] transition cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
         </div>
-        <h1 className="text-lg font-bold mb-2">Your account is awaiting approval</h1>
-        <p className="text-sm text-[var(--lg-text-secondary)] max-w-md text-center mb-6">
-          Thanks for requesting access. A Pulsar administrator needs to approve your account and
-          assign a plan before you can access the workspace. Sign back in to check your status —
-          once approved, this screen clears automatically.
-        </p>
-        <button
-          type="button"
-          onClick={signOut}
-          className="px-4 py-2 rounded-xl border border-slate-600 text-sm font-semibold flex items-center gap-2 hover:bg-white/5 transition"
-        >
-          <LogOut className="w-4 h-4" /> Sign out
-        </button>
       </div>
     );
   }
 
   if (access && access.status === 'disabled') {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center lg-aurora-bg bg-[var(--lg-bg-base)] text-[var(--lg-text-primary)] px-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-700 flex items-center justify-center shadow-lg shadow-rose-500/25 text-white mb-4">
-          <ShieldOff className="w-6 h-6" />
+      <div className="pv-shell min-h-screen w-full flex flex-col items-center justify-center text-[var(--pv-ink)] px-4">
+        <div className="pv-card p-8 flex flex-col items-center max-w-md w-full text-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-red-700 flex items-center justify-center shadow-lg shadow-rose-500/25 text-white mb-4">
+            <ShieldOff className="w-6 h-6" />
+          </div>
+          <h1 className="text-lg font-bold mb-2">Account disabled</h1>
+          <p className="text-sm text-[var(--pv-muted)] mb-6">
+            This account has been disabled. If you believe this is a mistake, contact your Pulsar administrator.
+          </p>
+          <button
+            type="button"
+            onClick={signOut}
+            className="px-4 py-2 rounded-xl border border-[var(--pv-border)] bg-[var(--pv-card-soft)] text-sm font-semibold flex items-center gap-2 hover:bg-[var(--pv-mint)] transition cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" /> Sign out
+          </button>
         </div>
-        <h1 className="text-lg font-bold mb-2">Account disabled</h1>
-        <p className="text-sm text-[var(--lg-text-secondary)] max-w-md text-center mb-6">
-          This account has been disabled. If you believe this is a mistake, contact your Pulsar administrator.
-        </p>
-        <button
-          type="button"
-          onClick={signOut}
-          className="px-4 py-2 rounded-xl border border-slate-600 text-sm font-semibold flex items-center gap-2 hover:bg-white/5 transition"
-        >
-          <LogOut className="w-4 h-4" /> Sign out
-        </button>
       </div>
     );
   }
