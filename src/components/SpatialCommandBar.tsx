@@ -9,6 +9,7 @@ import {
   Plus,
   Sun,
   Moon,
+  Settings,
   ShieldCheck,
   Crown,
   Lock,
@@ -25,7 +26,8 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { formatPSTTime } from '../utils/pstTime';
-import { ManagerSettings, ActionItem } from '../types';
+import { ManagerSettings, ActionItem, PulsarSpatialModule } from '../types';
+import { PulsarGalaxy } from './PulsarGalaxy';
 
 interface SpatialCommandBarProps {
   onOpenCommandPalette: () => void;
@@ -41,6 +43,12 @@ interface SpatialCommandBarProps {
   onExportCSV: () => void;
   settings: ManagerSettings;
   activeAgentsCount?: number;
+  // Vessa-structure additions: centered pill tabs + settings entry. Tabs
+  // switch real modules only; onSelectModule is App's plain setter here
+  // (the four tab targets need no special-casing).
+  activeModule?: PulsarSpatialModule;
+  onSelectModule?: (module: PulsarSpatialModule) => void;
+  onOpenSettings?: () => void;
 }
 
 export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
@@ -56,7 +64,10 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
   onOpenAI,
   onExportCSV,
   settings,
-  activeAgentsCount = 4
+  activeAgentsCount = 4,
+  activeModule,
+  onSelectModule,
+  onOpenSettings
 }) => {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -102,16 +113,52 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
 
   const tenantId = workspaceId || (isMasterAdmin ? 'ws_pulsar_master' : 'ws_pulsar_customer');
 
+  // Time-aware greeting for the user chip (reference bar shows one).
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const firstName = settings.managerName.split(' ')[0];
+
+  // Centered pill tabs — the revenue flow, Pulsar's own modules only.
+  // Any other module (via sidebar/dock) simply leaves all tabs unselected.
+  const barTabs: Array<{ id: PulsarSpatialModule; label: string }> = [
+    { id: 'command_center', label: 'Dashboard' },
+    { id: 'leads', label: 'Leads' },
+    { id: 'campaigns', label: 'Campaigns' },
+    { id: 'pipeline', label: 'Pipeline' },
+  ];
+
   return (
-    <header className={`sticky top-0 z-30 h-16 w-full border-b border-[var(--pv-border)] backdrop-blur-2xl transition-all duration-300 select-none text-[var(--pv-ink)] ${
+    <header className={`sticky top-0 z-30 h-16 mx-3 mt-3 mb-3 w-[calc(100%-1.5rem)] rounded-[28px] border border-[var(--pv-border)] backdrop-blur-2xl transition-all duration-300 select-none text-[var(--pv-ink)] ${
       isDark
         ? 'bg-[#121B14]/88 shadow-[0_4px_30px_rgba(0,0,0,0.35)]'
         : 'bg-white/85 shadow-sm'
     }`}>
       <div className="h-full px-4 flex items-center justify-between gap-3">
-        
-        {/* Left Section: Mobile Menu, Command Palette Search & Workspace Badge */}
-        <div className="flex items-center gap-2.5">
+
+        {/* Left Section: Brand, Mobile Menu, Command Palette Search & Workspace Badge */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* Brand — the reference bar carries the brand; the rail below
+              no longer does. Clicking loads the Dashboard, as before. */}
+          <button
+            type="button"
+            onClick={() => onSelectModule?.('command_center')}
+            className="flex items-center gap-2 shrink-0 cursor-pointer group text-left"
+            title="Pulsar — go to Dashboard"
+            aria-label="Pulsar — go to Dashboard"
+          >
+            <span className="transition-transform duration-200 group-hover:scale-105">
+              <PulsarGalaxy size="sm" state="active" glow={true} />
+            </span>
+            <span className="hidden sm:block leading-none">
+              <span className="block font-bold text-sm tracking-tight font-display text-[var(--pv-ink)] group-hover:underline decoration-[var(--pv-accent)] underline-offset-4">
+                Pulsar
+              </span>
+              <span className="block text-[10px] font-mono font-medium text-[var(--pv-accent)] mt-0.5">
+                Growth OS
+              </span>
+            </span>
+          </button>
+
           {/* Mobile Sidebar Hamburger */}
           <button
             onClick={onOpenMobileSidebar}
@@ -156,6 +203,31 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
           </button>
         </div>
 
+        {/* Center Section: pill tabs (reference structure, Pulsar modules).
+            Hidden below xl so the bar never crowds on smaller screens;
+            the sidebar and dock still reach every module there. */}
+        <div className="hidden xl:flex flex-1 justify-center min-w-0">
+          <div className="flex items-center gap-1 rounded-full border border-[var(--pv-border)] bg-[var(--pv-card-soft)] p-1">
+            {barTabs.map((tab) => {
+              const isActive = activeModule === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => onSelectModule?.(tab.id)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'bg-[var(--pv-green)] text-white shadow'
+                      : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)] hover:bg-[var(--pv-mint)]'
+                  }`}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Right Section: AI Fleet Status, PST Clock, Notifications, Quick Actions, Theme, User */}
         <div className="flex items-center gap-2">
           
@@ -174,6 +246,19 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
             <Clock className="w-3.5 h-3.5 text-[var(--pv-accent)]" />
             <span>{pstTime} <span className="text-[var(--pv-muted)] text-[10px]">PST</span></span>
           </div>
+
+          {/* Settings — dedicated icon button (reference structure).
+              Opens the same Settings modal as the sidebar's Settings. */}
+          {onOpenSettings && (
+            <button
+              onClick={onOpenSettings}
+              className="p-2 rounded-full border transition cursor-pointer bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-ink)]"
+              title="Settings"
+              aria-label="Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Notifications Drawer Dropdown */}
           <div className="relative" ref={notifRef}>
@@ -239,6 +324,19 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
               </div>
             )}
           </div>
+
+          {/* + New — primary creation button (reference structure).
+              Directly opens the new-prospect entry (leads module), the
+              same destination as Quick Action's "Add New Prospect".
+              The Quick Action dropdown stays for its other actions. */}
+          <button
+            onClick={onOpenNewLeadModal}
+            className="flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[var(--pv-green)] to-[var(--pv-accent)] hover:brightness-110 text-white text-xs font-bold shadow-[0_10px_22px_rgba(11,93,59,0.28)] transition cursor-pointer"
+            title="Add a new prospect"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New</span>
+          </button>
 
           {/* Quick Action Button */}
           <div className="relative" ref={actionsRef}>
@@ -321,7 +419,7 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
             >
               <div className="flex flex-col text-right hidden sm:block">
                 <span className="text-xs font-bold leading-none text-[var(--pv-ink)]">
-                  {settings.managerName.split(' ')[0]}
+                  {greeting}, {firstName}
                 </span>
                 <span className={`text-[10px] font-mono leading-none mt-0.5 ${
                   displayIsMaster ? 'text-[var(--pv-amber)]' : 'text-[var(--pv-sky)]'

@@ -25,17 +25,19 @@ import {
   Globe2, 
   Network, 
   Lock, 
-  Layers, 
-  Settings, 
-  ChevronLeft, 
+  Layers,
+  Settings,
+  ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Sun,
+  Moon,
   Pin,
   PinOff,
   LogOut
 } from 'lucide-react';
 import { PulsarSpatialModule } from '../types';
-import { PulsarGalaxy } from './PulsarGalaxy';
+import { useTheme } from '../context/ThemeContext';
 import { AccessInfo } from '../services/api';
 
 interface SpatialSidebarProps {
@@ -94,6 +96,8 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
   accountRoleLabel = 'Customer',
   onSignOut
 }) => {
+  // Theme pill drives the existing theme mechanism — no second system.
+  const { theme, setTheme } = useTheme();
 
   // Navigation Groupings matching Spatial Operating System specification
   const navGroups: NavGroup[] = [
@@ -200,79 +204,52 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
 
       {/* Spatial Sidebar Shell — Phase 1 theme: floating rail (rounded card,
           inset on desktop). Pin/collapse/brand behaviors unchanged. */}
-      <aside 
-        className={`pv-rail ${isCollapsed ? 'is-collapsed' : ''} fixed top-0 bottom-0 left-0 lg:top-3 lg:bottom-3 lg:left-3 z-40 flex flex-col transition-all duration-300 select-none ${
+      <aside
+        className={`pv-rail ${isCollapsed ? 'is-collapsed' : ''} fixed top-3 bottom-3 left-3 lg:top-[100px] lg:bottom-3 lg:left-3 z-40 flex flex-col transition-all duration-300 select-none rounded-[28px] ${
           isCollapsed ? 'w-20' : 'w-64'
         } ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-[var(--pv-border)] shrink-0">
-          {/* Brand button: loads the Dashboard (command_center) */}
-          <button
-            type="button"
-            onClick={() => {
-              onSelectModule('command_center');
-              if (onCloseMobile) onCloseMobile();
-            }}
-            className="flex items-center gap-3 overflow-hidden cursor-pointer group text-left"
-            title="Pulsar — go to Dashboard"
-            aria-label="Pulsar — go to Dashboard"
+        {/* Theme pill — the reference rail's top: a vertical sun/moon
+            pill, then a divider (the block's bottom border), then a gap,
+            then the nav icons. Brand moved to the top bar, which is where
+            the reference carries it; brand-click → Dashboard lives there.
+            Drives the existing ThemeContext (persisted `pulsar_theme`). */}
+        <div className="px-2.5 pt-4 pb-4 border-b border-[var(--pv-border)] shrink-0 flex justify-center">
+          <div
+            className="flex flex-col items-center gap-1 rounded-full border border-[var(--pv-border)] bg-[var(--pv-card-soft)] p-1.5"
+            role="group"
+            aria-label="Appearance"
           >
-            <div className="shrink-0 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-              <PulsarGalaxy size="sm" state="active" glow={true} />
-            </div>
-
-            {!isCollapsed && (
-              <div className="truncate">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-sm tracking-tight font-display text-[var(--pv-ink)] group-hover:underline decoration-[var(--pv-accent)] underline-offset-4">
-                    Pulsar
-                  </span>
-                  <span className="text-[10px] font-mono font-medium text-[var(--pv-accent)]">
-                    Growth OS
-                  </span>
-                </div>
-                <div className="text-[10px] text-[var(--pv-muted)] truncate">Revenue Intelligence</div>
-              </div>
-            )}
-          </button>
-
-          {/* Pin + Collapse Controls — Phase 2: visible in EVERY state.
-              Previously the pin toggle rendered only in the wide state, so
-              from the collapsed rail there was no way to pin, and on mobile
-              (hidden lg:flex) there was no expand/pin control at all.
-              Pinning from the rail also expands it (pinned ⇒ wide). */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Pin toggle — always offered; while pinned the sidebar is
-                locked open, so this is also where you unpin. */}
-            {onTogglePin && (
-              <button
-                onClick={onTogglePin}
-                className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
-                  isPinned
-                    ? 'bg-[var(--pv-mint)] border-[var(--pv-mint-2)] text-[var(--pv-green)] shadow-sm'
-                    : 'bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
-                }`}
-                title={isPinned ? 'Unpin sidebar (collapse allowed again)' : 'Pin sidebar open'}
-                aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
-                aria-pressed={isPinned}
-              >
-                {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              </button>
-            )}
-
-            {/* Collapse toggle — unavailable while pinned (locked wide) */}
-            {!isPinned && (
-              <button
-                onClick={onToggleCollapse}
-                className="flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]"
-                title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-              >
-                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setTheme('light')}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
+                theme === 'light'
+                  ? 'bg-[var(--pv-green)] text-white shadow'
+                  : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)] hover:bg-[var(--pv-mint)]'
+              }`}
+              title="Light mode"
+              aria-label="Light mode"
+              aria-pressed={theme === 'light'}
+            >
+              <Sun className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('dark')}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
+                theme === 'dark'
+                  ? 'bg-[var(--pv-green)] text-white shadow'
+                  : 'text-[var(--pv-muted)] hover:text-[var(--pv-ink)] hover:bg-[var(--pv-mint)]'
+              }`}
+              title="Dark mode"
+              aria-label="Dark mode"
+              aria-pressed={theme === 'dark'}
+            >
+              <Moon className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -356,6 +333,37 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
 
         {/* Bottom Operating State & Tenant Badge */}
         <div className="p-3 border-t border-[var(--pv-border)] shrink-0 space-y-2">
+          {/* Pin + collapse — moved here from the old brand header so the
+              rail top stays the theme pill per the reference. Same
+              behavior: pin locks the rail wide; collapse is unavailable
+              while pinned. Stacked in the collapsed rail so both fit. */}
+          <div className={`flex ${isCollapsed ? 'flex-col' : 'flex-row'} items-center justify-center gap-2`}>
+            {onTogglePin && (
+              <button
+                onClick={onTogglePin}
+                className={`flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer ${
+                  isPinned
+                    ? 'bg-[var(--pv-mint)] border-[var(--pv-mint-2)] text-[var(--pv-green)] shadow-sm'
+                    : 'bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]'
+                }`}
+                title={isPinned ? 'Unpin sidebar (collapse allowed again)' : 'Pin sidebar open'}
+                aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar open'}
+                aria-pressed={isPinned}
+              >
+                {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+              </button>
+            )}
+            {!isPinned && (
+              <button
+                onClick={onToggleCollapse}
+                className="flex items-center justify-center w-7 h-7 rounded-lg border transition cursor-pointer bg-[var(--pv-card-soft)] hover:bg-[var(--pv-mint)] border-[var(--pv-border)] text-[var(--pv-muted)] hover:text-[var(--pv-ink)]"
+                title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              >
+                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
+            )}
+          </div>
+
           <div className="pv-soft p-2.5 flex items-center gap-2.5 transition">
             <span className="w-2 h-2 rounded-full bg-[var(--pv-bright)] animate-pulse shadow-[0_0_8px_var(--pv-bright)] shrink-0" />
             {!isCollapsed && (

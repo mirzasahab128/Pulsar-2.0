@@ -987,9 +987,11 @@ export default function App() {
 
   return (
     <AuthGate>
-      <div className={`pv-shell relative min-h-screen flex flex-col font-sans selection:bg-[#0B5D3B] selection:text-white overflow-x-hidden transition-all duration-300 ${
-      effectiveSidebarCollapsed ? 'lg:pl-[6.5rem]' : 'lg:pl-[17.5rem]'
-    } bg-[var(--app-bg)] text-[var(--text-primary)] ${
+      {/* Floating-bubble layout (reference): the top bar spans the full
+          width as its own bubble, and the rail floats below it with gaps
+          on all sides. The sidebar offset therefore lives on the content
+          wrapper below the bar, not on this shell. */}
+      <div className={`pv-shell relative min-h-screen flex flex-col font-sans selection:bg-[#0B5D3B] selection:text-white overflow-x-hidden transition-all duration-300 bg-[var(--app-bg)] text-[var(--text-primary)] ${
       isDark ? 'quantum-bg-dark' : 'quantum-bg-light'
     }`}>
       
@@ -1097,7 +1099,14 @@ export default function App() {
         onExportCSV={handleExportCSV}
         settings={settings}
         activeAgentsCount={5}
+        activeModule={activeModule}
+        onSelectModule={setActiveModule}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
+
+      {/* Content wrapper — reserves the floating rail's width + side gap
+          on desktop, so content never slides under the bubble. */}
+      <div className={effectiveSidebarCollapsed ? 'lg:pl-[6.5rem]' : 'lg:pl-[17.5rem]'}>
 
       {/* Role & Access Mode Status Banner - Liquid Glass */}
       <div className={`w-full py-2 px-3 sm:px-4 border-b border-[var(--pv-border)] flex flex-wrap items-center justify-between gap-2 text-xs z-20 backdrop-blur-md transition-colors duration-200 text-[var(--pv-ink)] ${
@@ -1525,6 +1534,9 @@ export default function App() {
         )}
 
       </div>
+
+      </div>
+      {/* ^ closes the content wrapper opened below the top bar */}
 
       {/* Settings Modal */}
       <SettingsModal
