@@ -21,7 +21,8 @@ import {
   TrendingUp, 
   BarChart3, 
   Cpu, 
-  Clock, 
+  Clock,
+  Calendar,
   Globe2, 
   Network, 
   Lock, 
@@ -106,7 +107,8 @@ export const SpatialSidebar: React.FC<SpatialSidebarProps> = ({
       items: [
         { id: 'command_center', label: 'Dashboard', icon: Compass },
         { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles, badgeVariant: 'violet', feature: 'ai_assistant' },
-        { id: 'activity_feed', label: 'Activity Feed', icon: Activity }
+        { id: 'activity_feed', label: 'Activity Feed', icon: Activity },
+        { id: 'calendar', label: 'Calendar', icon: Calendar }
       ]
     },
     {

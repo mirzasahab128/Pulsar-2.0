@@ -53,6 +53,7 @@ import { SpatialAICopilotPanel } from './components/SpatialAICopilotPanel';
 import { LeadScraper } from './components/LeadScraper';
 import { LinkedInFinder } from './components/LinkedInFinder';
 import { CallStudio } from './components/CallStudio';
+import { CalendarView } from './components/CalendarView';
 import { MeetingNotesView } from './components/MeetingNotesView';
 import { RemindersTracker } from './components/RemindersTracker';
 import { GoogleTasksWorkspace } from './components/GoogleTasksWorkspace';
@@ -1241,6 +1242,28 @@ export default function App() {
             />
             </div>
           )
+        )}
+
+        {activeModule === 'calendar' && (
+          <CalendarView
+            tasks={tasks}
+            onOpenReminders={() => setActiveModule('reminders')}
+            onOpenCallForTask={(task) => {
+              // Honest routing only: a matched lead opens Call Studio,
+              // otherwise the task's home (Follow-ups & Tasks). No
+              // synthetic lead is ever constructed here.
+              const found = leads.find(l =>
+                (task.leadId && l.id === task.leadId) ||
+                (task.practiceName && l.practiceName.toLowerCase().includes(task.practiceName.toLowerCase()))
+              );
+              if (found) {
+                setActiveCallLead(found);
+                setActiveModule('call_studio');
+              } else {
+                setActiveModule('reminders');
+              }
+            }}
+          />
         )}
 
         {(activeModule === 'campaigns' || activeModule === 'email_outreach') && (

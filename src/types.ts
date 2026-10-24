@@ -297,6 +297,7 @@ export type PulsarSpatialModule =
   | 'command_center'
   | 'ai_assistant'
   | 'activity_feed'
+  | 'calendar'
   | 'leads'
   | 'prospects'
   | 'research'
