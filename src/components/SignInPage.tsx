@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  Sparkles, 
-  Lock, 
-  Mail, 
-  User as UserIcon, 
-  ArrowRight, 
-  Eye, 
-  EyeOff, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  Lock,
+  Mail,
+  User as UserIcon,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
   Sun,
   Moon,
   ShieldCheck,
   Stethoscope,
   Building2,
-  ClipboardList
+  ClipboardList,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { GoogleSignInButton } from './GoogleSignInButton';
 import { submitAccessRequest } from '../services/api';
+import '../styles/signin-gateway.css';
 
 const PLAN_OPTIONS = [
   { id: 'trial', name: 'Trial', note: 'Evaluate Pulsar with core features' },
@@ -27,6 +27,16 @@ const PLAN_OPTIONS = [
   { id: 'growth', name: 'Growth', note: 'Full platform for scaling teams' }
 ] as const;
 
+/**
+ * Access Gateway — "sliding split-card" design.
+ *
+ * A deep-green hero panel slides left <-> right (0.65s ease-in-out) when the
+ * user switches between Sign In and Request Access; the two form panels
+ * cross-fade/slide on the opposite side. All behaviour (Firebase email and
+ * Google sign-in, remember-this-workstation persistence, password reset,
+ * and the loss-proof access-request delivery) is unchanged — this file is a
+ * presentation rebuild only. See src/styles/signin-gateway.css.
+ */
 export const SignInPage: React.FC = () => {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -44,6 +54,12 @@ export const SignInPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const switchMode = (next: 'signin' | 'signup' | 'forgot') => {
+    setMode(next);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,180 +146,353 @@ export const SignInPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg-aurora-bg relative overflow-hidden bg-[var(--lg-bg-base)] text-[var(--lg-text-primary)]">
-      {/* Top Controls: Branding & Theme Switcher */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-3">
-        <button
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className="lg-glass lg-btn-ghost p-2.5 rounded-full text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)] transition-all"
-        >
-          {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-cyan-600" />}
-        </button>
+  const alerts = (
+    <>
+      {errorMessage && (
+        <div role="alert" className="gw-alert gw-alert-error">
+          <AlertCircle />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+      {successMessage && (
+        <div role="status" className="gw-alert gw-alert-success">
+          <CheckCircle2 />
+          <span>{successMessage}</span>
+        </div>
+      )}
+    </>
+  );
+
+  const googleBlock = (
+    <>
+      <button
+        type="button"
+        onClick={handleGoogleAuth}
+        disabled={isLoading}
+        className="gw-btn-google"
+      >
+        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+        </svg>
+        <span>Continue with Google</span>
+      </button>
+
+      <div className="gw-divider">
+        <span>Or with email</span>
       </div>
+    </>
+  );
 
-      <div className="w-full max-w-md relative z-10">
+  const panelFoot = (
+    <div className="gw-panel-foot">
+      <div className="gw-foot-line">
+        <ShieldCheck />
+        <span>Multi-tenant isolation &bull; Verified Firebase authentication</span>
+      </div>
+    </div>
+  );
+
+  const submitLabel = (label: string) => (
+    isLoading ? (
+      <>
+        <span className="gw-spinner" />
+        <span>Authenticating...</span>
+      </>
+    ) : (
+      <>
+        <span>{label}</span>
+        <ArrowRight className="w-4 h-4" />
+      </>
+    )
+  );
+
+  return (
+    <div className="gw-root">
+      {/* Theme Switcher */}
+      <button
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        className="gw-theme-btn"
+      >
+        {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-emerald-700" />}
+      </button>
+
+      <div className="gw-wrap">
         {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full lg-glass mb-4 border border-[var(--lg-emerald)]/30">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--lg-emerald)] animate-pulse" />
-            <span className="text-xs font-semibold tracking-wider uppercase text-[var(--lg-emerald)]">
-              Enterprise Workspace
-            </span>
+        <div className="gw-brand">
+          <div className="gw-brand-chip">
+            <span className="gw-dot" />
+            <span>Enterprise Workspace</span>
           </div>
-
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-white">
+          <div className="gw-brand-row">
+            <div className="gw-brand-mark">
               <Stethoscope className="w-6 h-6" />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight font-display">Pulsar</h1>
+            <h1 className="gw-brand-name">Pulsar</h1>
           </div>
-          <p className="text-sm text-[var(--lg-text-secondary)] max-w-xs mx-auto">
+          <p className="gw-brand-tag">
             AI-Powered Business Development &amp; Revenue Intelligence
           </p>
         </div>
 
-        {/* Liquid Glass Auth Card */}
-        <div className="lg-glass p-6 sm:p-8 rounded-3xl relative">
-          {/* Mode Switcher Tabs */}
-          {mode !== 'forgot' && (
-            <div className="flex rounded-xl p-1 bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] mb-6">
-              <button
-                type="button"
-                onClick={() => { setMode('signin'); setErrorMessage(null); setSuccessMessage(null); }}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  mode === 'signin'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                    : 'text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)]'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMode('signup'); setErrorMessage(null); setSuccessMessage(null); }}
-                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${
-                  mode === 'signup'
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                    : 'text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)]'
-                }`}
-              >
-                Request Access
-              </button>
-            </div>
-          )}
-
-          {/* Feedback Messages */}
-          {errorMessage && (
-            <div 
-              role="alert" 
-              className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn"
+        {/* Sliding Split Card */}
+        <div className="gw-card" data-mode={mode}>
+          {/* Hero panel — slides left <-> right on mode switch */}
+          <div className="gw-hero" aria-hidden={false}>
+            <div className="gw-hero-stars" />
+            <div className="gw-hero-moon" />
+            <svg
+              className="gw-hero-ridges"
+              viewBox="0 0 600 500"
+              preserveAspectRatio="none"
+              aria-hidden="true"
             >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
+              <path d="M0,215 L110,150 L215,205 L330,130 L450,200 L600,140 L600,500 L0,500 Z" fill="#0d4a2a" opacity="0.55" />
+              <path d="M0,300 L130,225 L265,290 L400,215 L600,285 L600,500 L0,500 Z" fill="#083018" opacity="0.8" />
+              <path d="M0,395 L150,325 L320,395 L465,330 L600,385 L600,500 L0,500 Z" fill="#04170d" />
+            </svg>
+
+            <div className="gw-hero-brand">
+              <span className="gw-hero-mark">
+                <Stethoscope className="w-4.5 h-4.5" />
+              </span>
+              <span>Pulsar</span>
             </div>
-          )}
 
-          {successMessage && (
-            <div 
-              role="status" 
-              className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn"
-            >
-              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {/* Google 1-Click Auth */}
-          {mode !== 'forgot' && (
-            <>
-              <button
-                type="button"
-                onClick={handleGoogleAuth}
-                disabled={isLoading}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border border-[var(--lg-border-glass)] bg-[var(--lg-bg-elevated)] hover:border-emerald-500/50 hover:bg-[var(--lg-bg-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-50"
-              >
-                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <div className="relative my-6 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[var(--lg-border-glass)]" />
-                </div>
-                <span className="relative px-3 text-xs uppercase tracking-wider text-[var(--lg-text-muted)] bg-[var(--lg-bg-card)]">
-                  Or with email
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'signup' && (
-              <div>
-                <label 
-                  htmlFor="displayName" 
-                  className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
+            <div className="gw-hero-inner">
+              <div className={`gw-hero-content ${mode !== 'signup' ? 'is-active' : ''}`}>
+                <h2 className="gw-hero-title">Hello there</h2>
+                <p className="gw-hero-text">
+                  Begin your journey using Pulsar, and put revenue intelligence to work for your practice.
+                </p>
+                <button
+                  type="button"
+                  className="gw-hero-btn"
+                  onClick={() => switchMode('signup')}
+                  tabIndex={mode !== 'signup' ? 0 : -1}
                 >
-                  Full Name / Title
-                </label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
-                  <input
-                    id="displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="e.g. Dr. Alex Vance, MD"
-                    required
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
-                  />
-                </div>
+                  Request Access
+                </button>
               </div>
-            )}
 
-            <div>
-              <label 
-                htmlFor="email" 
-                className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
-              >
-                Work Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@practice.com"
-                  required
-                  disabled={isLoading}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
-                />
+              <div className={`gw-hero-content ${mode === 'signup' ? 'is-active' : ''}`}>
+                <h2 className="gw-hero-title">Welcome back</h2>
+                <p className="gw-hero-text">
+                  Login to review your latest pipeline, calls, and growth.
+                </p>
+                <button
+                  type="button"
+                  className="gw-hero-btn"
+                  onClick={() => switchMode('signin')}
+                  tabIndex={mode === 'signup' ? 0 : -1}
+                >
+                  Sign In
+                </button>
               </div>
             </div>
+          </div>
 
-            {mode === 'signup' && (
-              <>
-                <div>
-                  <label
-                    htmlFor="organization"
-                    className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
-                  >
-                    Organization
+          {/* Sign In / Forgot panel (left side) */}
+          <section
+            className="gw-panel gw-panel-signin"
+            aria-hidden={mode === 'signup'}
+            inert={mode === 'signup'}
+          >
+            {mode === 'forgot' ? (
+              <form onSubmit={handleSubmit} className="gw-form" style={{ flex: '1 0 auto' }}>
+                <div className="gw-form-grow">
+                  <h2 className="gw-title">Reset Password</h2>
+                  <p className="gw-subtitle">Enter your work email and we&rsquo;ll send a secure reset link.</p>
+
+                  {alerts}
+
+                  <div>
+                    <label htmlFor="email" className="gw-label">Work Email</label>
+                    <div className="gw-input-wrap">
+                      <Mail className="gw-input-icon" />
+                      <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@practice.com"
+                        required
+                        disabled={isLoading}
+                        className="gw-input"
+                      />
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={isLoading} className="gw-btn-primary">
+                    {isLoading ? (
+                      <>
+                        <span className="gw-spinner" />
+                        <span>Authenticating...</span>
+                      </>
+                    ) : (
+                      <span>Send Password Reset Link</span>
+                    )}
+                  </button>
+
+                  <p className="gw-switch-line">
+                    Remembered it?{' '}
+                    <button type="button" className="gw-link" onClick={() => switchMode('signin')}>
+                      Back to Sign In
+                    </button>
+                  </p>
+                </div>
+
+                {panelFoot}
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="gw-form" style={{ flex: '1 0 auto' }}>
+                <div className="gw-form-grow">
+                  <h2 className="gw-title">Sign In</h2>
+                  <p className="gw-subtitle">Sign in to your Pulsar workspace.</p>
+
+                  {alerts}
+
+                  {googleBlock}
+
+                  <div>
+                    <label htmlFor="email" className="gw-label">Work Email</label>
+                    <div className="gw-input-wrap">
+                      <Mail className="gw-input-icon" />
+                      <input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@practice.com"
+                        required
+                        disabled={isLoading}
+                        className="gw-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="gw-forgot-row">
+                      <label htmlFor="password" className="gw-label">Password</label>
+                      <button
+                        type="button"
+                        onClick={() => switchMode('forgot')}
+                        className="gw-link"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <div className="gw-input-wrap">
+                      <Lock className="gw-input-icon" />
+                      <input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        disabled={isLoading}
+                        className="gw-input"
+                        style={{ paddingRight: '2.6rem' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="gw-eye-btn"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <label className="gw-check gw-check-inline">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      disabled={isLoading}
+                    />
+                    Remember this workstation
                   </label>
-                  <div className="relative">
-                    <Building2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
+
+                  <button type="submit" disabled={isLoading} className="gw-btn-primary">
+                    {submitLabel('Sign In')}
+                  </button>
+
+                  <p className="gw-switch-line">
+                    New to Pulsar?{' '}
+                    <button type="button" className="gw-link" onClick={() => switchMode('signup')}>
+                      Request access
+                    </button>
+                  </p>
+                </div>
+
+                {panelFoot}
+              </form>
+            )}
+          </section>
+
+          {/* Request Access panel (right side) */}
+          <section
+            className="gw-panel gw-panel-signup"
+            aria-hidden={mode !== 'signup'}
+            inert={mode !== 'signup'}
+          >
+            <form onSubmit={handleSubmit} className="gw-form" style={{ flex: '1 0 auto' }}>
+              <div className="gw-form-grow">
+                <h2 className="gw-title">Request Access</h2>
+                <p className="gw-subtitle">Request access for your organization.</p>
+
+                {alerts}
+
+                {googleBlock}
+
+                <div>
+                  <label htmlFor="displayName" className="gw-label">Full Name / Title</label>
+                  <div className="gw-input-wrap">
+                    <UserIcon className="gw-input-icon" />
+                    <input
+                      id="displayName"
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="e.g. Dr. Alex Vance, MD"
+                      required
+                      disabled={isLoading}
+                      className="gw-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="email-signup" className="gw-label">Work Email</label>
+                  <div className="gw-input-wrap">
+                    <Mail className="gw-input-icon" />
+                    <input
+                      id="email-signup"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@practice.com"
+                      required
+                      disabled={isLoading}
+                      className="gw-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="organization" className="gw-label">Organization</label>
+                  <div className="gw-input-wrap">
+                    <Building2 className="gw-input-icon" />
                     <input
                       id="organization"
                       type="text"
@@ -312,179 +501,102 @@ export const SignInPage: React.FC = () => {
                       placeholder="e.g. RevCycle Health System"
                       required
                       disabled={isLoading}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
+                      className="gw-input"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="requestedPlan"
-                    className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
-                  >
-                    Requested Plan
-                  </label>
-                  <div className="relative">
-                    <ClipboardList className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)] pointer-events-none" />
+                  <label htmlFor="requestedPlan" className="gw-label">Requested Plan</label>
+                  <div className="gw-input-wrap">
+                    <ClipboardList className="gw-input-icon" />
                     <select
                       id="requestedPlan"
                       value={requestedPlan}
                       onChange={(e) => setRequestedPlan(e.target.value)}
                       disabled={isLoading}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all appearance-none"
+                      className="gw-input"
                     >
                       {PLAN_OPTIONS.map(p => (
                         <option key={p.id} value={p.id}>{p.name} — {p.note}</option>
                       ))}
                     </select>
+                    <ChevronDown className="gw-select-chevron" />
                   </div>
-                  <p className="mt-1.5 text-[11px] text-[var(--lg-text-muted)]">An administrator reviews every request and confirms the plan at approval.</p>
+                  <p className="gw-hint">An administrator reviews every request and confirms the plan at approval.</p>
                 </div>
-              </>
-            )}
 
-            {mode !== 'forgot' && (
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label 
-                    htmlFor="password" 
-                    className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)]"
-                  >
-                    Password
-                  </label>
-                  {mode === 'signin' && (
+                <div>
+                  <label htmlFor="password-signup" className="gw-label">Password</label>
+                  <div className="gw-input-wrap">
+                    <Lock className="gw-input-icon" />
+                    <input
+                      id="password-signup"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      disabled={isLoading}
+                      className="gw-input"
+                      style={{ paddingRight: '2.6rem' }}
+                    />
                     <button
                       type="button"
-                      onClick={() => { setMode('forgot'); setErrorMessage(null); setSuccessMessage(null); }}
-                      className="text-xs text-[var(--lg-emerald)] hover:underline focus:outline-none"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      className="gw-eye-btn"
                     >
-                      Forgot password?
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
-                  )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)] hover:text-[var(--lg-text-primary)]"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {mode === 'signup' && (
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-xs font-semibold uppercase tracking-wider text-[var(--lg-text-secondary)] mb-1.5"
-                >
-                  Confirm Password
+                <div>
+                  <label htmlFor="confirmPassword" className="gw-label">Confirm Password</label>
+                  <div className="gw-input-wrap">
+                    <Lock className="gw-input-icon" />
+                    <input
+                      id="confirmPassword"
+                      type={showPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Repeat password"
+                      required
+                      disabled={isLoading}
+                      className="gw-input"
+                    />
+                  </div>
+                  <p className="gw-hint">Min 8 characters. Use a strong, unique password.</p>
+                </div>
+
+                <label className="gw-check">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    disabled={isLoading}
+                  />
+                  <span>I accept the Terms of Service and Privacy Policy, and understand that accounts require administrator approval.</span>
                 </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--lg-text-muted)]" />
-                  <input
-                    id="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password"
-                    required
-                    disabled={isLoading}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--lg-bg-elevated)] border border-[var(--lg-border-glass)] text-sm placeholder-[var(--lg-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--lg-emerald)] transition-all"
-                  />
-                </div>
-                <p className="mt-1.5 text-[11px] text-[var(--lg-text-muted)]">Min 8 characters. Use a strong, unique password.</p>
+
+                <button type="submit" disabled={isLoading} className="gw-btn-primary">
+                  {submitLabel('Submit Access Request')}
+                </button>
+
+                <p className="gw-switch-line">
+                  Already have an account?{' '}
+                  <button type="button" className="gw-link" onClick={() => switchMode('signin')}>
+                    Sign in
+                  </button>
+                </p>
               </div>
-            )}
 
-            {mode === 'signin' && (
-              <label className="flex items-center gap-2.5 text-xs text-[var(--lg-text-secondary)] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={isLoading}
-                  className="w-4 h-4 rounded accent-emerald-500"
-                />
-                Remember this workstation
-              </label>
-            )}
-
-            {mode === 'signup' && (
-              <label className="flex items-start gap-2.5 text-xs text-[var(--lg-text-secondary)] cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  disabled={isLoading}
-                  className="w-4 h-4 mt-0.5 rounded accent-emerald-500"
-                />
-                <span>I accept the Terms of Service and Privacy Policy, and understand that accounts require administrator approval.</span>
-              </label>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full lg-btn lg-btn-primary mt-2 py-3 rounded-xl flex items-center justify-center gap-2 font-semibold shadow-lg shadow-emerald-500/25"
-            >
-              {isLoading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Authenticating...</span>
-                </>
-              ) : mode === 'forgot' ? (
-                <span>Send Password Reset Link</span>
-              ) : mode === 'signup' ? (
-                <>
-                  <span>Submit Access Request</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Forgot Password Cancel */}
-          {mode === 'forgot' && (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => { setMode('signin'); setErrorMessage(null); setSuccessMessage(null); }}
-                className="text-xs text-[var(--lg-text-secondary)] hover:text-[var(--lg-text-primary)] underline"
-              >
-                Back to Sign In
-              </button>
-            </div>
-          )}
-
-          {/* Security & Role Enforcement Guarantee */}
-          <div className="mt-6 pt-5 border-t border-[var(--lg-border-glass)] text-center">
-            <div className="flex items-center justify-center gap-2 text-xs text-[var(--lg-text-muted)]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[var(--lg-emerald)]" />
-              <span>Multi-tenant isolation &bull; Verified Firebase authentication</span>
-            </div>
-          </div>
+              {panelFoot}
+            </form>
+          </section>
         </div>
       </div>
     </div>
