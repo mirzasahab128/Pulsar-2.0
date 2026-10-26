@@ -181,6 +181,7 @@ export const LinkedInOutreachAutomator: React.FC<LinkedInOutreachAutomatorProps>
 
         let smartFilterResult = undefined;
         let itemStatus: LinkedInQueueItem['status'] = 'queued';
+        let filterError: string | undefined = undefined;
 
         if (criteria.enableSmartFiltering) {
           try {
@@ -200,8 +201,12 @@ export const LinkedInOutreachAutomator: React.FC<LinkedInOutreachAutomatorProps>
               itemStatus = 'approved';
             }
           } catch (e) {
+            // Fail closed, not open: the old code approved the prospect here,
+            // so an unreachable filter silently verified everyone. An unverified
+            // prospect stays 'queued' with the failure recorded on the item.
             console.warn('Smart filter error for prospect:', e);
-            itemStatus = 'approved';
+            itemStatus = 'queued';
+            filterError = 'Verification unavailable: the smart filter could not be reached. This prospect has not been verified.';
           }
         } else {
           itemStatus = 'approved';
@@ -215,18 +220,20 @@ export const LinkedInOutreachAutomator: React.FC<LinkedInOutreachAutomatorProps>
           templateId: template.id,
           templateName: template.name,
           personalizedNote: note,
-          smartFilter: smartFilterResult
+          smartFilter: smartFilterResult,
+          filterError
         });
       }
 
       const updatedQueue = [...queue, ...newQueueItems];
       onUpdateQueue(updatedQueue);
 
-      const approvedCount = newQueueItems.filter(item => item.status !== 'rejected_by_ai').length;
+      const approvedCount = newQueueItems.filter(item => item.status === 'approved').length;
       const rejectedCount = newQueueItems.filter(item => item.status === 'rejected_by_ai').length;
+      const unverifiedCount = newQueueItems.filter(item => item.filterError).length;
 
       setStatusNotice(
-        `✓ Queued ${approvedCount} verified medical decision-makers! (${rejectedCount} non-buyers filtered out by Gemini). Ready for throttled dispatch (50/day safe limit).`
+        `✓ Queued ${approvedCount} verified medical decision-makers! (${rejectedCount} non-buyers filtered out${unverifiedCount > 0 ? `, ${unverifiedCount} left unverified because verification was unreachable` : ''}). Ready for throttled dispatch (50/day safe limit).`
       );
     } catch (err: any) {
       console.error('Find and queue error:', err);
@@ -817,9 +824,13 @@ export const LinkedInOutreachAutomator: React.FC<LinkedInOutreachAutomatorProps>
                         >
                           <Sparkles className="w-3 h-3" />
                           <span>{item.smartFilter.authorityLevel}</span>
-                          <span className="font-bold">({item.smartFilter.confidence}% Conf)</span>
+                          <span className="font-bold">({typeof item.smartFilter.confidence === 'number' ? `${item.smartFilter.confidence}% Conf` : `${item.smartFilter.confidenceBand || 'unscored'} band, heuristic`})</span>
                           <Info className="w-3 h-3 ml-0.5" />
                         </button>
+                      ) : item.filterError ? (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          Unverified: filter unreachable
+                        </span>
                       ) : (
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
                           Direct Queued
@@ -1031,7 +1042,7 @@ export const LinkedInOutreachAutomator: React.FC<LinkedInOutreachAutomatorProps>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Confidence Score:</span>
-                  <span className="font-mono text-cyan-300 font-bold">{filterReasonModal.smartFilter?.confidence}%</span>
+                  <span className="font-mono text-cyan-300 font-bold">{typeof filterReasonModal.smartFilter?.confidence === 'number' ? `${filterReasonModal.smartFilter.confidence}%` : `${filterReasonModal.smartFilter?.confidenceBand || 'unscored'} band (heuristic, no precise score)`}</span>
                 </div>
               </div>
 

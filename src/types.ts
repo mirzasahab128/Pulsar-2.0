@@ -220,7 +220,11 @@ export interface LinkedInOutreachTemplate {
 
 export interface LinkedInSmartFilterResult {
   isDecisionMaker: boolean;
-  confidence: number;
+  // null when the server answered with its labeled heuristic (no Gemini key):
+  // a band, not a fabricated precise percentage.
+  confidence: number | null;
+  confidenceBand?: string;
+  source?: string;
   authorityLevel: 'High (Direct Signer)' | 'Moderate (Key Influencer)' | 'Low (Non-Buyer)';
   reasoning: string;
   verifiedAt: string;
@@ -240,6 +244,9 @@ export interface LinkedInQueueItem {
   templateName?: string;
   personalizedNote?: string;
   smartFilter?: LinkedInSmartFilterResult;
+  // Set when smart filtering failed for this prospect: the item was NOT
+  // verified and must not be treated as approved. It stays 'queued'.
+  filterError?: string;
   scheduledTimeSlot?: string; // e.g. "08:30", "11:45", "14:15", "17:00"
   batchName?: string;
   crmSynced?: boolean;

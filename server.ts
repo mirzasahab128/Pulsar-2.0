@@ -345,6 +345,58 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'pulsar', timestamp: new Date().toISOString() });
 });
 
+// Shared NPPES -> lead mapping, used by both /api/leads/npi-search and
+// /api/leads/scrape so discovery returns the same real, provenanced records.
+// Phone is null when CMS reports none (no placeholders); EHR, claim volume
+// and pain points are unknown, never measured, so they live under `estimates`.
+function mapNpiEntryToLead(entry: any, index: number, fallbackState?: string) {
+  const basic = entry.basic || {};
+  const addresses = entry.addresses || [];
+  const primaryAddr = addresses.find((a: any) => a.address_purpose === 'LOCATION') || addresses[0] || {};
+  const taxonomy = entry.taxonomies?.[0] || {};
+
+  const isOrg = entry.enumeration_type === 'NPI-2';
+  const doctorName = isOrg
+    ? `${basic.authorized_official_first_name || ''} ${basic.authorized_official_last_name || ''}`.trim()
+    : `${basic.first_name || ''} ${basic.last_name || ''}${basic.credential ? ', ' + basic.credential : ''}`.trim();
+  const practiceName = isOrg
+    ? (basic.organization_name || basic.name)
+    : `${basic.first_name || ''} ${basic.last_name || ''} Practice`;
+
+  return {
+    id: `npi-${entry.number || Date.now()}-${index}`,
+    npiNumber: String(entry.number),
+    practiceName: practiceName || 'Healthcare Provider Practice',
+    doctorName: doctorName || 'Physician Administrator',
+    title: isOrg ? 'Chief Medical Officer / Practice Administrator' : 'Managing Physician / Owner',
+    specialty: taxonomy.desc || 'General Medical Practice',
+    practiceSize: isOrg ? 'Multi-Provider Group' : 'Solo / Small Group Practice',
+    phone: primaryAddr.telephone_number || null,
+    email: '',
+    address: `${primaryAddr.address_1 || ''}, ${primaryAddr.city || ''}, ${primaryAddr.state || ''} ${primaryAddr.postal_code || ''}`.trim(),
+    state: primaryAddr.state || fallbackState || 'US',
+    estimates: {
+      estimated: true,
+      note: 'Not reported by CMS NPI Registry; values are unknown, not measured.',
+      ehrSystem: null,
+      monthlyClaimVolume: null,
+      painPoints: []
+    },
+    linkedInProfile: '',
+    adminContact: isOrg ? `${basic.authorized_official_title || 'Billing Administrator'}` : 'Practice Billing Coordinator',
+    source: 'CMS NPI Registry (Verified)',
+    provenance: {
+      source: 'CMS NPI Registry (NPPES)',
+      retrievedAt: new Date().toISOString(),
+      verifiedFields: ['npiNumber', 'practiceName', 'doctorName', 'specialty', 'phone', 'address']
+    },
+    status: 'Ready for Call',
+    verified: true,
+    lawfulBasis: 'Public Federal Healthcare Registry (NPPES)',
+    lastVerifiedDate: new Date().toISOString()
+  };
+}
+
 // NPI Registry Direct Search (Verified CMS Public Healthcare Data)
 // Phases 1–3: plan-gated (npi_search) with the monthly leads limit (§3e).
 app.post('/api/leads/npi-search', requireFeature('npi_search'), requireWithinLimit('leads'), ah(async (req, res) => {
@@ -377,57 +429,7 @@ app.post('/api/leads/npi-search', requireFeature('npi_search'), requireWithinLim
     }
     const npiData = await npiResponse.json() as any;
 
-    const leads = (npiData.results || []).map((entry: any, index: number) => {
-      const basic = entry.basic || {};
-      const addresses = entry.addresses || [];
-      const primaryAddr = addresses.find((a: any) => a.address_purpose === 'LOCATION') || addresses[0] || {};
-      const taxonomy = entry.taxonomies?.[0] || {};
-      
-      const isOrg = entry.enumeration_type === 'NPI-2';
-      const doctorName = isOrg 
-        ? `${basic.authorized_official_first_name || ''} ${basic.authorized_official_last_name || ''}`.trim() 
-        : `${basic.first_name || ''} ${basic.last_name || ''}${basic.credential ? ', ' + basic.credential : ''}`.trim();
-      const practiceName = isOrg 
-        ? (basic.organization_name || basic.name) 
-        : `${basic.first_name || ''} ${basic.last_name || ''} Practice`;
-
-      return {
-        id: `npi-${entry.number || Date.now()}-${index}`,
-        npiNumber: String(entry.number),
-        practiceName: practiceName || 'Healthcare Provider Practice',
-        doctorName: doctorName || 'Physician Administrator',
-        title: isOrg ? 'Chief Medical Officer / Practice Administrator' : 'Managing Physician / Owner',
-        specialty: taxonomy.desc || 'General Medical Practice',
-        practiceSize: isOrg ? 'Multi-Provider Group' : 'Solo / Small Group Practice',
-        // Phase 0 (M6): phone is null when CMS does not report one — no
-        // placeholder numbers. ehrSystem / monthlyClaimVolume / painPoints
-        // were previously invented here and presented under verified:true;
-        // CMS does not report them, so they live under `estimates` as null.
-        phone: primaryAddr.telephone_number || null,
-        email: '',
-        address: `${primaryAddr.address_1 || ''}, ${primaryAddr.city || ''}, ${primaryAddr.state || ''} ${primaryAddr.postal_code || ''}`.trim(),
-        state: primaryAddr.state || state || 'US',
-        estimates: {
-          estimated: true,
-          note: 'Not reported by CMS NPI Registry; values are unknown, not measured.',
-          ehrSystem: null,
-          monthlyClaimVolume: null,
-          painPoints: []
-        },
-        linkedInProfile: '',
-        adminContact: isOrg ? `${basic.authorized_official_title || 'Billing Administrator'}` : 'Practice Billing Coordinator',
-        source: 'CMS NPI Registry (Verified)',
-        provenance: {
-          source: 'CMS NPI Registry (NPPES)',
-          retrievedAt: new Date().toISOString(),
-          verifiedFields: ['npiNumber', 'practiceName', 'doctorName', 'specialty', 'phone', 'address']
-        },
-        status: 'Ready for Call',
-        verified: true,
-        lawfulBasis: 'Public Federal Healthcare Registry (NPPES)',
-        lastVerifiedDate: new Date().toISOString()
-      };
-    });
+    const leads = (npiData.results || []).map((entry: any, index: number) => mapNpiEntryToLead(entry, index, state));
 
     // Meter the leads this search produced against the caller's plan (§3e).
     if ((req as any).user?.uid && leads.length > 0) {
@@ -450,16 +452,17 @@ app.post('/api/leads/npi-search', requireFeature('npi_search'), requireWithinLim
 // Phase 0 (C1): the previous implementation generated "hyper-realistic"
 // (invented) leads with Gemini, or returned hardcoded invented practices as
 // if they were registry data. That is a build failure — deleted. Lead
-// discovery returns results only from real sources (NPI Registry above,
-// Maps grounding below). This endpoint has no live source of its own:
+// discovery returns results only from real sources. This endpoint's live
+// source is the CMS NPI Registry (same mapping as /api/leads/npi-search):
 // - DEMO_MODE=true  -> demo records, every one flagged simulated: true
-// - otherwise       -> an honest empty result (status: 'no_live_source')
+// - otherwise       -> live NPPES discovery (status: 'live_source'); an
+//   NPPES failure is an honest 500, never invented leads.
 app.post('/api/leads/scrape', requireFeature('lead_discovery'), requireWithinLimit('leads'), ah(async (req, res) => {
   const fieldErr = validateFields(req.body, {
     specialty: 'string', state: 'string', query: 'string', count: 'number'
   });
   if (fieldErr) return badRequest(res, fieldErr);
-  const { specialty, state } = req.body;
+  const { specialty, state, count } = req.body;
 
   if (process.env.DEMO_MODE === 'true') {
     const filtered = DEMO_RCM_LEADS.filter(l => {
@@ -491,15 +494,51 @@ app.post('/api/leads/scrape', requireFeature('lead_discovery'), requireWithinLim
     });
   }
 
-  return res.json({
-    success: true,
-    simulated: false,
-    status: 'no_live_source',
-    source: 'none',
-    result_count: 0,
-    leads: [],
-    message: 'Lead scraping is not connected to a live source. Use NPI Registry search (/api/leads/npi-search) or Maps discovery (/api/leads/maps-search) for real records, or set DEMO_MODE=true for labeled demo data.'
-  });
+  // Live source: the public CMS NPI Registry, the same mapping as
+  // /api/leads/npi-search. The scraper no longer reports "no live source":
+  // it performs a real registry discovery, metered like any other search.
+  // (It still returns nothing invented: an NPPES failure is a 500, and the
+  // client surfaces it as an honest error.)
+  try {
+    const params = new URLSearchParams({
+      version: '2.1',
+      limit: String(Math.min(25, Number(count) || 10))
+    });
+    if (state && state !== 'All') params.append('state', state);
+    if (specialty && specialty !== 'All') params.append('taxonomy_description', specialty);
+
+    const npiUrl = `https://npiregistry.cms.hhs.gov/api/?${params.toString()}`;
+    const safety = isSafeOutboundUrl(npiUrl);
+    if (!safety.safe) {
+      return res.status(400).json({ success: false, error: safety.reason });
+    }
+
+    const npiController = new AbortController();
+    const npiTimer = setTimeout(() => npiController.abort(), 8000);
+    const npiResponse = await fetch(npiUrl, { signal: npiController.signal }).finally(() => clearTimeout(npiTimer));
+    if (!npiResponse.ok) {
+      throw new Error(`NPI Registry returned HTTP ${npiResponse.status}`);
+    }
+    const npiData = await npiResponse.json() as any;
+    const leads = (npiData.results || []).map((entry: any, index: number) => mapNpiEntryToLead(entry, index, state));
+
+    if ((req as any).user?.uid && leads.length > 0) {
+      recordUsage(getPlatformState(), (req as any).user.uid, 'leads', leads.length);
+      persistPlatform();
+    }
+
+    return res.json({
+      success: true,
+      simulated: false,
+      status: 'live_source',
+      source: 'CMS NPI Registry (NPPES)',
+      result_count: npiData.result_count || leads.length,
+      leads
+    });
+  } catch (err: any) {
+    console.error('Lead scrape (NPI) error:', err);
+    return res.status(500).json({ success: false, error: err?.message || 'Failed to query CMS NPI Registry' });
+  }
 }));
 
 // 1b. Google Maps Grounded Healthcare Provider Discovery (using gemini-3.5-flash with googleMaps)

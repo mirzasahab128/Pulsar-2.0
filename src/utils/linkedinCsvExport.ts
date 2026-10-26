@@ -65,7 +65,7 @@ export const exportLinkedInQueueToCSV = (
       escapeCsvValue(p.connectionDegree || '2nd'),
       escapeCsvValue(sf ? (sf.isDecisionMaker ? 'YES (Decision Maker)' : 'NO (Non-Buyer)') : 'Unverified'),
       escapeCsvValue(sf?.authorityLevel || 'N/A'),
-      escapeCsvValue(sf ? `${sf.confidence}%` : 'N/A'),
+      escapeCsvValue(sf ? (typeof sf.confidence === 'number' ? `${sf.confidence}%` : `${sf.confidenceBand || 'unscored'} band (heuristic)`) : 'N/A'),
       escapeCsvValue(sf?.reasoning || ''),
       escapeCsvValue(item.templateName || 'Clean Claims Focus'),
       escapeCsvValue(item.personalizedNote || ''),

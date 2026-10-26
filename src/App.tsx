@@ -215,48 +215,22 @@ export default function App() {
 
   // Daily statistics
   const [stats, setStats] = useState<DailyStats>({
-    callsPlaced: 42,
-    humanConnects: 19,
-    warmTransfersBridged: 6,
-    auditsBooked: 3,
-    leadsScraped: 35,
-    pipelineAdded: '$145,000 / mo',
-    denialAuditValue: '$520,000'
+    // All counters start at zero. The previous values (42 calls, 35 leads,
+    // $145,000 pipeline, $520,000 denial value) referenced demo practices
+    // and were never real activity. Counters increment only on real actions.
+    callsPlaced: 0,
+    humanConnects: 0,
+    warmTransfersBridged: 0,
+    auditsBooked: 0,
+    leadsScraped: 0,
+    pipelineAdded: '$0 / mo',
+    denialAuditValue: '$0'
   });
 
   // Warm transfers log
-  const [warmTransfers, setWarmTransfers] = useState<WarmTransferRecord[]>([
-    {
-      id: 'wt-1',
-      leadName: 'Dr. Marcus Vance, MD',
-      practiceName: 'Austin Heart & Vascular Institute',
-      phone: '(512) 892-4100',
-      bridgedAt: '10:14 AM PST',
-      durationWithManager: '4m 12s',
-      triggerReason: 'Prospect asked about eClinicalWorks integration and fee percentage',
-      outcome: 'Complimentary 50-Claim Audit Scheduled'
-    },
-    {
-      id: 'wt-2',
-      leadName: 'David Sterling (VP RCM)',
-      practiceName: 'Northwest Orthopedic & Spine Surgery',
-      phone: '(206) 781-9920',
-      bridgedAt: '1:45 PM PST',
-      durationWithManager: '6m 30s',
-      triggerReason: 'Frustrated with workers comp surgical modifier underpayments',
-      outcome: 'Zoom Clearinghouse Walkthrough Booked'
-    },
-    {
-      id: 'wt-3',
-      leadName: 'Robert Hughes (CFO)',
-      practiceName: 'Apex Precision Diagnostic & Pathology Labs',
-      phone: '(404) 636-7200',
-      bridgedAt: '2:50 PM PST',
-      durationWithManager: '3m 50s',
-      triggerReason: 'Molecular pathology CPT denials causing $80k backlogs',
-      outcome: 'Formal Lab Billing Proposal Requested'
-    }
-  ]);
+  // Starts empty: the previous records were scripted transfers for demo
+  // practices. Real transfers are appended by real call outcomes only.
+  const [warmTransfers, setWarmTransfers] = useState<WarmTransferRecord[]>([]);
 
   // Initial Leads
   // Leads start empty: no hardcoded demo practices. Real leads arrive only
@@ -264,138 +238,16 @@ export default function App() {
   const [leads, setLeads] = useState<RCMLead[]>([]);
 
   // Initial Meeting Notes
-  const [meetingNotes, setMeetingNotes] = useState<MeetingNote[]>([
-    {
-      id: 'note-sample-1',
-      leadId: 'lead-1',
-      practiceName: 'Austin Heart & Vascular Institute',
-      doctorName: 'Dr. Marcus Vance, MD, FACC',
-      date: formatPSTDate(),
-      duration: '4m 12s',
-      executiveSummary: 'AI Agent Sarah dialed and introduced our cardiology clean-claim rate. When Dr. Vance asked how we interface with eClinicalWorks and address catheterization denials, Sarah immediately bridged the call to the Sales Manager on line 1. Dr. Vance was impressed by our certified cardiology coders and agreed to transmit 50 sample claims for a free audit.',
-      qualificationStatus: 'Hot Lead',
-      statedBillingPainPoints: [
-        '16% initial denial rate on cardiac catheterization CPT 93458 codes',
-        'Days in AR stretched out to 54 days with Blue Cross and Medicare Advantage',
-        'Prior authorization bottlenecks causing scheduling delays'
-      ],
-      currentSoftwareAndStaffing: 'eClinicalWorks EHR with 2 in-house billers overwhelmed by appeals',
-      commercialTermsDiscussed: 'Performance rate of 4.5% of net collections; zero setup fees; free 50-claim diagnostic audit.',
-      decisionMakersIdentified: 'Dr. Marcus Vance (Managing Partner) and Brenda Miller (Practice Administrator)',
-      actionItems: [
-        {
-          id: 'task-init-1',
-          task: 'Send HIPAA-compliant Business Associate Agreement (BAA) and secure audit upload link to Brenda Miller',
-          due: 'Tomorrow 9:30 AM PST',
-          priority: 'Urgent',
-          category: 'Audit Proposal',
-          completed: false,
-          practiceName: 'Austin Heart & Vascular Institute'
-        },
-        {
-          id: 'task-init-2',
-          task: 'Connect with Brenda Miller on LinkedIn with Cardiology Denial Reduction Whitepaper',
-          due: 'Today 5:00 PM PST',
-          priority: 'High',
-          category: 'Email Followup',
-          completed: false,
-          practiceName: 'Austin Heart & Vascular Institute'
-        }
-      ],
-      recommendedFollowUpStrategy: 'Deliver the 50-claim audit report within 48 hours highlighting their unbilled modifier 59 codes. Show how our audit directly recovers over $38,000 in previously abandoned denials.',
-      transcript: [
-        { id: '1', speaker: 'Prospect', text: 'Hello, Austin Heart and Vascular, this is Brenda.', timestamp: '10:14:02 AM' },
-        { id: '2', speaker: 'AI Agent (Sarah)', text: 'Hi Brenda! This is Sarah with Pulsar. I am calling for Dr. Vance regarding your eClinicalWorks billing and cardiology claim denials. We recently helped a Texas heart clinic cut denial rates from 16% to 2.4%. Is Dr. Vance available for a quick moment?', timestamp: '10:14:08 AM', sentiment: 'positive' },
-        { id: '3', speaker: 'Prospect', text: 'Dr. Vance is actually walking down the hall right now, let me see if he wants to take this. Hold on.', timestamp: '10:14:20 AM' },
-        { id: '4', speaker: 'Prospect', text: 'This is Dr. Vance. What is this regarding?', timestamp: '10:14:32 AM' },
-        { id: '5', speaker: 'AI Agent (Sarah)', text: 'Dr. Vance, thank you so much. I know you are in clinic—I have our Sales & Operations Manager on standby to look at your specific cath lab denial volume. Linking you directly right now!', timestamp: '10:14:40 AM', sentiment: 'positive' },
-        { id: '6', speaker: 'System', text: '📞 Call bridged to Sales Manager line (+1 (555) 382-9104).', timestamp: '10:14:42 AM' },
-        { id: '7', speaker: 'Manager (You)', text: 'Dr. Vance, pleasure to connect with you. Sarah mentioned your team is battling high cardiac catheterization denials on eCW. We provide certified AAPC cardiology coders and an aggressive denial overturn team.', timestamp: '10:14:50 AM' },
-        { id: '8', speaker: 'Prospect', text: 'Yes, exactly. We lose thousands on unbundled modifier denials every month. How does your free audit work?', timestamp: '10:15:15 AM' },
-        { id: '9', speaker: 'Manager (You)', text: 'We sign a quick BAA, you securely send us 50 sample redacted EOBs, and within 48 hours we provide a complete revenue leakage breakdown with exact dollars recovered. No charge, no obligation.', timestamp: '10:15:35 AM' },
-        { id: '10', speaker: 'Prospect', text: 'Send the BAA to Brenda, and we will get that right over.', timestamp: '10:15:58 AM' }
-      ]
-    }
-  ]);
+  // Notes start empty: the previous sample note was a scripted transcript
+  // for a demo practice that never existed. Real notes come from real
+  // transcripts or manual entry only.
+  const [meetingNotes, setMeetingNotes] = useState<MeetingNote[]>([]);
 
   // Tasks and Reminders
-  const [tasks, setTasks] = useState<ActionItem[]>([
-    {
-      id: 'task-scheduled-1',
-      task: 'Scheduled Follow-Up Call: Dr. Marcus Vance (Austin Heart & Vascular) - Review 50-Claim Audit Results & Fee Schedule',
-      due: 'Tomorrow, 10:00 AM PST',
-      priority: 'Urgent',
-      category: 'Phone Call',
-      completed: false,
-      leadId: 'lead-1',
-      practiceName: 'Austin Heart & Vascular Institute',
-      doctorName: 'Dr. Marcus Vance, MD, FACC',
-      phone: '(512) 892-4100',
-      isScheduledCall: true,
-      scheduledDateTime: '2026-09-25T10:00',
-      notes: 'Review catheterization modifier 59 denials and walk through fee schedule options.'
-    },
-    {
-      id: 'task-scheduled-2',
-      task: 'Scheduled Follow-Up Call: David Sterling (Northwest Orthopedic) - AthenaHealth Clearinghouse Denial Overturn Demo',
-      due: 'Friday, 2:30 PM PST',
-      priority: 'High',
-      category: 'Phone Call',
-      completed: false,
-      leadId: 'lead-2',
-      practiceName: 'Northwest Orthopedic & Spine Surgery',
-      doctorName: 'David Sterling (VP RCM)',
-      phone: '(206) 781-9920',
-      isScheduledCall: true,
-      scheduledDateTime: '2026-09-26T14:30',
-      notes: 'Provide live demo of claims scrubber and explain zero-setup fee transition.'
-    },
-    {
-      id: 'task-init-1',
-      task: 'Send HIPAA BAA agreement and secure 50-claim upload link to Brenda Miller at Austin Heart',
-      due: 'Tomorrow 9:30 AM PST',
-      priority: 'Urgent',
-      category: 'Audit Proposal',
-      completed: false,
-      practiceName: 'Austin Heart & Vascular Institute'
-    },
-    {
-      id: 'task-init-2',
-      task: 'Prepare AthenaHealth clearinghouse denial recovery deck for Northwest Orthopedic',
-      due: 'Tomorrow 11:00 AM PST',
-      priority: 'High',
-      category: 'EHR Demo',
-      completed: false,
-      practiceName: 'Northwest Orthopedic & Spine'
-    },
-    {
-      id: 'task-init-3',
-      task: 'Follow up with Robert Hughes (Apex Diagnostic Labs CFO) on 4% lab billing tier proposal',
-      due: 'Thursday 1:00 PM PST',
-      priority: 'High',
-      category: 'Contract',
-      completed: false,
-      practiceName: 'Apex Precision Diagnostic Labs'
-    },
-    {
-      id: 'task-init-4',
-      task: 'Send personalized InMail sequence to 10 Practice Administrators scraped on LinkedIn',
-      due: 'Today 4:30 PM PST',
-      priority: 'Medium',
-      category: 'Email Followup',
-      completed: false,
-      practiceName: 'LinkedIn Outbound Batch'
-    },
-    {
-      id: 'task-init-5',
-      task: 'Verify Medicare CMS-1500 taxonomy code crosswalk for Texas pediatric and family medicine directory',
-      due: 'Next Monday, 9:00 AM PST',
-      priority: 'Low',
-      category: 'Audit Proposal',
-      completed: false,
-      practiceName: 'Texas Regional CMS Database'
-    }
-  ]);
+  // Tasks start empty: the previous sample tasks referenced demo practices
+  // (Austin Heart, Northwest Orthopedic, Apex Labs) that were removed.
+  // Real tasks arrive from user actions and real leads only.
+  const [tasks, setTasks] = useState<ActionItem[]>([]);
 
   // Save settings changes
   const handleSaveSettings = async (newSettings: ManagerSettings) => {
@@ -765,16 +617,13 @@ export default function App() {
       handleUpdateLeadTags(matchedLead.id, ['Target', 'VIP Practice', 'In Pipeline']);
     }
 
-    setStats((prev) => {
-      const currentVal = parseInt(prev.pipelineAdded.replace(/[^0-9]/g, ''), 10) || 145000;
-      const newVal = currentVal + 65000;
-      return {
-        ...prev,
-        auditsBooked: prev.auditsBooked + 1,
-        pipelineAdded: `$${newVal.toLocaleString()} / mo`,
-        denialAuditValue: '$680,000'
-      };
-    });
+    setStats((prev) => ({
+      ...prev,
+      // Honest counters only: no invented pipeline or denial-audit dollars.
+      // Dollar totals stay at their real (currently zero) values until real
+      // pipeline data exists; this action only records one more audit booked.
+      auditsBooked: prev.auditsBooked + 1
+    }));
 
     setActiveTab('pipeline');
   };

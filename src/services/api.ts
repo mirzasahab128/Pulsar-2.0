@@ -96,38 +96,29 @@ export const apiService = {
     };
   }): Promise<{
     isDecisionMaker: boolean;
-    confidence: number;
+    confidence: number | null;
+    confidenceBand?: string;
+    source?: string;
     authorityLevel: 'High (Direct Signer)' | 'Moderate (Key Influencer)' | 'Low (Non-Buyer)';
     reasoning: string;
     recommendedAngle?: string;
     verifiedAt: string;
   }> {
-    try {
-      const res = await fetch('/api/linkedin/smart-filter', {
-        method: 'POST',
-        headers: await getAuthHeaders(),
-        body: JSON.stringify(params),
-      });
-      const data = await res.json();
-      if (data.success && data.result) {
-        return data.result;
-      }
-      throw new Error('Smart filter API error');
-    } catch (e) {
-      console.warn('Smart filter failed, using local heuristic:', e);
-      const text = `${params.prospect.headline} ${params.prospect.fullName} ${params.prospect.experience}`.toLowerCase();
-      const isHigh = text.includes('administrator') || text.includes('director') || text.includes('partner') || text.includes('cmo') || text.includes('owner') || text.includes('md') || text.includes('do');
-      return {
-        isDecisionMaker: isHigh,
-        confidence: isHigh ? 94 : 35,
-        authorityLevel: isHigh ? 'High (Direct Signer)' : 'Moderate (Key Influencer)',
-        reasoning: isHigh 
-          ? 'Confirmed administrative or executive physician leadership with vendor contracting authority.' 
-          : 'Clinical practitioner or staff; influences clearinghouse and practice management choices.',
-        recommendedAngle: 'Complimentary 50-claim diagnostic denial audit benchmark',
-        verifiedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ' PST'
-      };
+    // No local fallback: the previous catch block invented confidence scores
+    // (94 / 35) and "Confirmed..." reasoning from a keyword guess whenever the
+    // server was unreachable. An unverified prospect must surface as an error,
+    // never as a confident verdict. The server itself already returns an
+    // honest heuristic result (confidence: null + band) when Gemini is unset.
+    const res = await fetch('/api/linkedin/smart-filter', {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    if (data.success && data.result) {
+      return data.result;
     }
+    throw new Error(data.error || 'Smart filter API error');
   },
 
   async sendLinkedInConnection(payload: {
