@@ -18,55 +18,10 @@ export async function fetchScrapedLeads(params: {
     }
     throw new Error('Invalid response from leads scraper');
   } catch (e) {
-    console.warn('Scraper API call failed, generating synthetic lead batch:', e);
-    // Dynamic fallback generation when offline/fallback
-    const specialties = [
-      'Cardiology & Vascular Medicine',
-      'Orthopedic Surgery & Sports Medicine',
-      'Pathology & Diagnostic Testing Labs',
-      'Pediatrics & Adolescent Care',
-      'Dermatology & Mohs Surgery',
-      'Internal Medicine & Primary Care',
-      'Neurology & Spine Associates'
-    ];
-    const states = ['TX', 'FL', 'CA', 'NY', 'IL', 'GA', 'MA', 'OH', 'AZ'];
-    const ehrs = ['Epic Systems', 'AthenaHealth', 'eClinicalWorks', 'NextGen', 'Modernizing Medicine (EMA)', 'Kareo'];
-    const count = params.count || 5;
-
-    return Array.from({ length: count }, (_, idx) => {
-      const spec = params.specialty && params.specialty !== 'All' 
-        ? params.specialty 
-        : specialties[Math.floor(Math.random() * specialties.length)];
-      const st = params.state && params.state !== 'All' 
-        ? params.state 
-        : states[Math.floor(Math.random() * states.length)];
-      const ehr = ehrs[Math.floor(Math.random() * ehrs.length)];
-      const randomNum = Math.floor(100 + Math.random() * 900);
-      const doctorLastName = ['Vance', 'Sterling', 'Desai', 'Kim', 'Hayes', 'Chen', 'Patel', 'Hughes', 'Lin', 'Bennett'][Math.floor(Math.random() * 10)];
-
-      return {
-        id: `lead-continuous-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
-        practiceName: `${st} ${spec.split(' ')[0]} Healthcare Clinic`,
-        doctorName: `Dr. ${doctorLastName}, MD`,
-        title: 'Managing Partner & Medical Director',
-        specialty: spec,
-        practiceSize: '4-12 Clinical Providers',
-        phone: `(${randomNum}) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`,
-        email: `dr.${doctorLastName.toLowerCase()}@${spec.split(' ')[0].toLowerCase()}care-${st.toLowerCase()}.com`,
-        address: `${Math.floor(100 + Math.random() * 9000)} Medical Pkwy, Suite ${Math.floor(100 + Math.random() * 500)}, ${st}`,
-        state: st,
-        ehrSystem: ehr,
-        monthlyClaimVolume: `$${Math.floor(250 + Math.random() * 650)},000 / mo (approx. ${Math.floor(1800 + Math.random() * 3500)} claims)`,
-        painPoints: [
-          'High prior authorization denials and delays',
-          'AR aging > 50 days averaging 18% of monthly billing',
-          'Complex out-of-network reimbursement disputes'
-        ],
-        tags: ['Target'],
-        source: 'Pulsar Autonomous Continuous Scraper',
-        status: 'Ready for Call'
-      };
-    });
+    // No synthetic fallback: when the discovery server is unreachable, the
+    // honest result is an error, never invented leads presented as scraped.
+    console.warn('Scraper API call failed, no leads generated:', e);
+    throw new Error('Lead discovery is unavailable: the Pulsar server is not reachable. No leads were generated.');
   }
 }
 
@@ -289,11 +244,13 @@ export class ContinuousLeadScraper {
       this.notifyError(err instanceof Error ? err : new Error(String(err)), batch.batchNumber);
       this.notifyStatusChange('Error', this.currentBatch);
 
-      // Graceful retry backoff: auto-queue next batch after 5 seconds to ensure perpetual resilience
-      if (this.isRunning && !this.isPaused) {
-        this.loopTimeoutId = setTimeout(() => {
-          this.queueNextBatch();
-        }, 5000);
+      // No auto-requeue on failure: a dead discovery server must surface as
+      // a visible Error state, not a perpetual loop of failed batches.
+      this.isRunning = false;
+      this.isPaused = false;
+      if (this.loopTimeoutId) {
+        clearTimeout(this.loopTimeoutId);
+        this.loopTimeoutId = null;
       }
     }
   }

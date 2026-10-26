@@ -184,6 +184,7 @@ export default function App() {
   const [isCodebaseOpen, setIsCodebaseOpen] = useState<boolean>(false);
   const [isNicheLibraryOpen, setIsNicheLibraryOpen] = useState<boolean>(false);
   const [readOnlyNotice, setReadOnlyNotice] = useState<string | null>(null);
+  const [discoveryNotice, setDiscoveryNotice] = useState<string | null>(null);
 
   // Authentication & Role-Based Access Control
   const { role, isReadOnly, isMasterAdmin, workspaceId, profile, setQuickProfile, openAuthModal, updateWorkspaceNiche, access, currentUser, signOut } = useAuth();
@@ -1313,25 +1314,26 @@ export default function App() {
           <div className="space-y-6">
             <SkiperRadarScanner
               leads={leads}
-              onTriggerScrape={({ specialty, location, count }) => {
-                const generatedLeads: RCMLead[] = Array.from({ length: count }, (_, i) => ({
-                  id: `lead-radar-${Date.now()}-${i}`,
-                  practiceName: `${location.split(',')[0]} ${specialty} Clinic ${i + 1}`,
-                  doctorName: `Dr. Alex Vance, MD (${specialty.split(' ')[0]})`,
-                  title: 'Managing Partner & Clinical Director',
-                  specialty: specialty,
-                  practiceSize: '5-15 Providers',
-                  phone: `(${Math.floor(100 + Math.random() * 900)}) ${Math.floor(100 + Math.random() * 900)}-${Math.floor(1000 + Math.random() * 9000)}`,
-                  email: `dr.vance${i + 1}@clinicalpractice.org`,
-                  address: `${100 + i * 20} Medical Plaza Parkway`,
-                  state: location.includes('TX') ? 'TX' : location.includes('WA') ? 'WA' : 'GA',
-                  ehrSystem: i % 2 === 0 ? 'eClinicalWorks v12' : 'Epic Systems',
-                  monthlyClaimVolume: '$180,000 / mo',
-                  painPoints: ['Prior Auth Overdue', 'Denials on Complex Modifiers', 'Staffing Turnover'],
-                  source: 'Skiper UI Autonomous Bot Scraper',
-                  status: 'Ready for Call'
-                }));
-                handleAddScrapedLeads(generatedLeads);
+              onTriggerScrape={async ({ specialty, location, count }) => {
+                // Real discovery only: the radar never invents leads. When the
+                // server is unreachable or returns nothing, show it honestly.
+                try {
+                  const realLeads = await apiService.scrapeLeads({
+                    specialty: specialty || undefined,
+                    query: location || undefined,
+                    count,
+                  });
+                  if (realLeads.length > 0) {
+                    handleAddScrapedLeads(realLeads);
+                  } else {
+                    setDiscoveryNotice('Lead discovery returned no leads: the server has no live source connected. No leads were invented.');
+                    setTimeout(() => setDiscoveryNotice(null), 6000);
+                  }
+                } catch (err) {
+                  console.error('Radar scrape failed:', err);
+                  setDiscoveryNotice('Lead discovery is unavailable: the Pulsar server is not connected. No leads were generated.');
+                  setTimeout(() => setDiscoveryNotice(null), 6000);
+                }
               }}
               onSendToCallQueue={(lead) => {
                 setActiveCallLead(lead);
@@ -1687,6 +1689,16 @@ export default function App() {
           <Lock className="w-4 h-4 text-sky-400 shrink-0" />
           <span className="flex-1">{readOnlyNotice}</span>
           <button onClick={() => setReadOnlyNotice(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Lead Discovery Notice Toast */}
+      {discoveryNotice && (
+        <div className="fixed top-40 right-6 z-50 p-4 rounded-2xl bg-slate-900 border border-amber-500/50 shadow-2xl text-white text-xs flex items-center gap-3 animate-in slide-in-from-top-4 duration-300 max-w-md">
+          <span className="flex-1">{discoveryNotice}</span>
+          <button onClick={() => setDiscoveryNotice(null)} className="p-1 text-slate-400 hover:text-white cursor-pointer">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
