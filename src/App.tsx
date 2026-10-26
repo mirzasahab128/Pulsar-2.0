@@ -259,128 +259,9 @@ export default function App() {
   ]);
 
   // Initial Leads
-  const [leads, setLeads] = useState<RCMLead[]>([
-    {
-      id: 'lead-1',
-      practiceName: 'Austin Heart & Vascular Institute',
-      doctorName: 'Dr. Marcus Vance, MD, FACC',
-      title: 'Managing Partner & Interventional Cardiologist',
-      specialty: 'Cardiology & Electrophysiology',
-      practiceSize: '6 Physicians, 2 PAs',
-      phone: '(512) 892-4100',
-      email: 'mvance@austinheartandvascular.com',
-      address: '4201 Medical Pkwy, Suite 320, Austin, TX 78756',
-      state: 'TX',
-      ehrSystem: 'eClinicalWorks',
-      monthlyClaimVolume: '$420,000 / mo (approx. 1,800 claims)',
-      painPoints: ['High denial rates on cardiac catheterization coding (16%)', 'Days in AR lingering at 54 days', 'Front-desk prior auth bottlenecks'],
-      tags: ['Target', 'VIP Practice'],
-      linkedInProfile: 'https://linkedin.com/in/dr-marcus-vance-austin-heart',
-      adminContact: 'Brenda Miller - Practice Administrator',
-      source: 'Web & NPI Registry Scraper',
-      status: 'Ready for Call'
-    },
-    {
-      id: 'lead-2',
-      practiceName: 'Northwest Orthopedic & Spine Surgery',
-      doctorName: 'Dr. Elena Rostova, MD',
-      title: 'Chief Medical Officer & Orthopedic Surgeon',
-      specialty: 'Orthopedic Surgery & Sports Medicine',
-      practiceSize: '9 Surgeons, 4 PT Facilities',
-      phone: '(206) 781-9920',
-      email: 'erostova@northwestorthospine.org',
-      address: '1100 9th Ave, Seattle, WA 98101',
-      state: 'WA',
-      ehrSystem: 'AthenaHealth',
-      monthlyClaimVolume: '$890,000 / mo (approx. 3,400 claims)',
-      painPoints: ['Workers comp & out-of-network fee schedule underpayments', 'Denials for surgical modifier 59/25', 'Understaffed in-house billing department'],
-      tags: ['Target', 'Follow-up Needed'],
-      linkedInProfile: 'https://linkedin.com/in/elena-rostova-ortho-wa',
-      adminContact: 'David Sterling - Director of Revenue Cycle',
-      source: 'LinkedIn Health Discovery',
-      status: 'Ready for Call'
-    },
-    {
-      id: 'lead-3',
-      practiceName: 'Beacon Hill Pediatric & Adolescent Medicine',
-      doctorName: 'Dr. Jonathan Blake, MD, FAAP',
-      title: 'Founding Pediatrician',
-      specialty: 'Pediatrics & Adolescent Care',
-      practiceSize: '4 Pediatricians, 3 Nurse Practitioners',
-      phone: '(617) 523-8840',
-      email: 'jblake@beaconhillpediatrics.com',
-      address: '15 Cambridge St, Boston, MA 02114',
-      state: 'MA',
-      ehrSystem: 'Epic (Community Connect)',
-      monthlyClaimVolume: '$290,000 / mo (approx. 2,100 claims)',
-      painPoints: ['Vaccine administration reimbursement disputes with Medicaid MCOs', 'Delayed credentialing for new mid-level providers', 'AR over 90 days exceeded 22%'],
-      tags: ['Follow-up Needed'],
-      linkedInProfile: 'https://linkedin.com/in/jonathan-blake-boston-peds',
-      adminContact: 'Sarah Jennings - Clinic Operations Manager',
-      source: 'Google Places & State Medical Board',
-      status: 'Ready for Call'
-    },
-    {
-      id: 'lead-4',
-      practiceName: 'Apex Precision Diagnostic & Pathology Labs',
-      doctorName: 'Dr. Anita Desai, MD, FCAP',
-      title: 'Laboratory Medical Director',
-      specialty: 'Independent Clinical & Pathology Laboratory',
-      practiceSize: 'Commercial Testing Lab (3 Collection Centers)',
-      phone: '(404) 636-7200',
-      email: 'anita.desai@apexpathlabs.com',
-      address: '2200 Century Pkwy NE, Atlanta, GA 30345',
-      state: 'GA',
-      ehrSystem: 'LigoLab LIS / Kareo Billing',
-      monthlyClaimVolume: '$640,000 / mo (approx. 6,200 claims)',
-      painPoints: ['Molecular pathology CPT code unbundling rejections', 'Massive Medicare LCD requirement denials', 'Need specialized laboratory billing team'],
-      tags: ['Target', 'High Denial Rate'],
-      linkedInProfile: 'https://linkedin.com/in/anita-desai-pathology',
-      adminContact: 'Robert Hughes - Chief Financial Officer',
-      source: 'CLIA Lab Directory Scraper',
-      status: 'Ready for Call'
-    },
-    {
-      id: 'lead-5',
-      practiceName: 'Sunshine Coast Dermatology & Mohs Center',
-      doctorName: 'Dr. Gregory Kim, MD, FAAD',
-      title: 'Lead Dermatologist & Mohs Surgeon',
-      specialty: 'Dermatology & Mohs Micrographic Surgery',
-      practiceSize: '3 Dermatologists, 1 Dermatopathologist',
-      phone: '(305) 538-4411',
-      email: 'gkim@sunshinedermfl.com',
-      address: '4300 Alton Rd, Suite 400, Miami Beach, FL 33140',
-      state: 'FL',
-      ehrSystem: 'Modernizing Medicine (EMA)',
-      monthlyClaimVolume: '$510,000 / mo (approx. 2,600 claims)',
-      painPoints: ['Biopsy pathology split-billing payment delays', 'Aging self-pay deductible collections', 'Denial overturn turnaround taking >60 days'],
-      tags: ['Follow-up Needed'],
-      linkedInProfile: 'https://linkedin.com/in/gregory-kim-fl-derm',
-      adminContact: 'Claudia Morales - Office Billing Lead',
-      source: 'LinkedIn Executive Search',
-      status: 'Ready for Call'
-    },
-    {
-      id: 'lead-6',
-      practiceName: 'Great Lakes Regional Community Hospital',
-      doctorName: 'Dr. Thomas Sterling, MD',
-      title: 'VP of Medical Affairs & Physician Network',
-      specialty: 'Critical Access Hospital & Multi-Specialty Clinic',
-      practiceSize: '45 Bed Hospital + 3 Outpatient Clinics',
-      phone: '(312) 942-5000',
-      email: 'tsterling@greatlakeshealth.org',
-      address: '1653 W Congress Pkwy, Chicago, IL 60612',
-      state: 'IL',
-      ehrSystem: 'Cerner / Oracle Health',
-      monthlyClaimVolume: '$2,400,000 / mo',
-      painPoints: ['Complex DRG cross-coding denials', 'Aged hospital accounts receivable exceeding $1.8M', 'Staff turnover in central billing office (CBO)'],
-      tags: ['Target', 'VIP Practice'],
-      linkedInProfile: 'https://linkedin.com/in/thomas-sterling-healthcare-exec',
-      adminContact: 'Danielle Brooks - VP Revenue Cycle Management',
-      source: 'AHA Hospital Directory Scraper',
-      status: 'Ready for Call'
-    }
-  ]);
+  // Leads start empty: no hardcoded demo practices. Real leads arrive only
+  // from the server (NPI Registry search) or from entries the user adds.
+  const [leads, setLeads] = useState<RCMLead[]>([]);
 
   // Initial Meeting Notes
   const [meetingNotes, setMeetingNotes] = useState<MeetingNote[]>([
@@ -911,28 +792,22 @@ export default function App() {
     setActiveTab('call_studio');
   };
 
-  const handleVoiceScrapeLeadsTrigger = () => {
-    const newScraped: RCMLead[] = [
-      {
-        id: `lead-voice-${Date.now()}-1`,
-        practiceName: 'Baylor St. Luke Cardiology & Electrophysiology',
-        doctorName: 'Dr. Marcus Vance, MD, FACC',
-        title: 'Managing Partner & Interventional Cardiologist',
-        specialty: 'Cardiovascular Disease',
-        practiceSize: '7 Physicians, 3 PAs',
-        phone: '(512) 892-4100',
-        email: 'mvance@baylorcardio.org',
-        address: '6624 Fannin St, Houston, TX 77030',
-        state: 'TX',
-        ehrSystem: 'eClinicalWorks v12',
-        monthlyClaimVolume: '$540,000 / mo',
-        painPoints: ['Prior Auth Overdue', 'Denials on Complex Modifiers', 'Staffing Turnover'],
-        tags: ['Target', 'VIP Practice', 'In Pipeline'],
-        source: 'Voice Radar Trigger',
-        status: 'Audit Scheduled'
+  const handleVoiceScrapeLeadsTrigger = async () => {
+    // Real discovery only: the voice trigger never invents leads. When the
+    // server is unreachable or returns nothing, say so honestly.
+    try {
+      const realLeads = await apiService.scrapeLeads({ count: 5 });
+      if (realLeads.length > 0) {
+        handleAddScrapedLeads(realLeads);
+      } else {
+        setDiscoveryNotice('Lead discovery returned no leads: the server has no live source connected. No leads were invented.');
+        setTimeout(() => setDiscoveryNotice(null), 6000);
       }
-    ];
-    handleAddScrapedLeads(newScraped);
+    } catch (err) {
+      console.error('Voice scrape trigger failed:', err);
+      setDiscoveryNotice('Lead discovery is unavailable: the Pulsar server is not connected. No leads were generated.');
+      setTimeout(() => setDiscoveryNotice(null), 6000);
+    }
     setActiveTab('leads');
   };
 
