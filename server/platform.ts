@@ -54,6 +54,11 @@ export interface PlatformUser {
   uid: string;
   email: string;
   displayName: string;
+  /** Admin Command Center: free-form job title shown in the admin user
+   *  list (e.g. 'Owner - Master Admin'). Admins pick from titles already
+   *  in use plus standard titles, or type a custom one. A title never
+   *  grants access; role and plan still decide that. */
+  title?: string;
   role: PlatformRole;
   planId: string | null;
   status: PlatformStatus;

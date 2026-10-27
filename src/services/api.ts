@@ -531,7 +531,7 @@ All ${params.stats.warmTransfersBridged} connected calls were immediately bridge
     return data;
   },
 
-  async patchAdminUser(uid: string, patch: { planId?: string | null; role?: string; status?: string; displayName?: string }): Promise<PlatformUserRecord> {
+  async patchAdminUser(uid: string, patch: { planId?: string | null; role?: string; status?: string; displayName?: string; title?: string }): Promise<PlatformUserRecord> {
     const headers = await getAuthHeaders();
     const res = await fetch(`/api/admin/users/${encodeURIComponent(uid)}`, {
       method: 'PATCH',
@@ -919,6 +919,8 @@ export interface PlatformUserRecord {
   uid: string;
   email: string;
   displayName: string;
+  /** Admin Command Center: free-form job title (picked from existing titles or custom). */
+  title?: string;
   role: 'master_admin' | 'admin' | 'user';
   planId: string | null;
   status: 'pending_approval' | 'active' | 'disabled';

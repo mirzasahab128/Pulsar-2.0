@@ -67,6 +67,14 @@ export const AdminCommandCenter: React.FC = () => {
   const [newPlanId, setNewPlanId] = useState('');
   const [newRole, setNewRole] = useState('user');
   const [inviteStatus, setInviteStatus] = useState<string | null>(null);
+  const [customTitleUid, setCustomTitleUid] = useState<string | null>(null);
+  const [customTitleText, setCustomTitleText] = useState('');
+  /** Title picker options: titles already in use first (preexisting),
+   *  then standard titles. Custom entry is handled by the Custom option. */
+  const titleSuggestions = Array.from(new Set([
+    ...users.map(u => u.title).filter((t): t is string => !!t),
+    'Owner - Master Admin', 'Master Admin', 'Admin', 'Manager', 'Sales Manager', 'AR Manager', 'Team Lead', 'User'
+  ]));
 
   // Per-user access editor (uid whose editor is expanded)
   const [accessEditorUid, setAccessEditorUid] = useState<string | null>(null);
@@ -367,6 +375,7 @@ export const AdminCommandCenter: React.FC = () => {
               <thead>
                 <tr className="text-left text-slate-500 border-b border-slate-700/30">
                   <th className="py-2 pr-3">User</th>
+                  <th className="py-2 pr-3">Title</th>
                   <th className="py-2 pr-3">Role</th>
                   <th className="py-2 pr-3">Plan</th>
                   <th className="py-2 pr-3">Status</th>
@@ -382,6 +391,27 @@ export const AdminCommandCenter: React.FC = () => {
                       <td className="py-2 pr-3">
                         <div className="font-semibold">{u.displayName}</div>
                         <div className="text-slate-500">{u.email}</div>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <select
+                          value={customTitleUid === u.uid ? '__custom__' : (u.title || '')}
+                          onChange={e => {
+                            const v = e.target.value;
+                            if (v === '__custom__') { setCustomTitleUid(u.uid); setCustomTitleText(u.title || ''); }
+                            else { runAction(async () => { await apiService.patchAdminUser(u.uid, { title: v }); }, v ? 'Title updated' : 'Title cleared'); }
+                          }}
+                          className={inputCls}
+                        >
+                          <option value="">No title</option>
+                          {titleSuggestions.map(t => <option key={t} value={t}>{t}</option>)}
+                          <option value="__custom__">Custom title…</option>
+                        </select>
+                        {customTitleUid === u.uid && (
+                          <div className="flex gap-1 mt-1">
+                            <input value={customTitleText} onChange={e => setCustomTitleText(e.target.value)} placeholder="Custom title" maxLength={80} className={inputCls} />
+                            <button onClick={() => { const t = customTitleText.trim(); if (!t) return; runAction(async () => { await apiService.patchAdminUser(u.uid, { title: t }); }, 'Title updated'); setCustomTitleUid(null); }} className="px-2 py-1 rounded bg-violet-600 text-white text-xs shrink-0">Save</button>
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 pr-3">
                         <select

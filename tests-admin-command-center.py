@@ -300,6 +300,23 @@ def main():
         s, _ = req("PUT", "/api/admin/config/master-admins", {"emails": []}, token=owner)
         check("cleanup: owner clears stored list -> 200", s == 200, f"got {s}")
 
+        # --- title: preexisting pick + custom + clear --------------------------
+        s, b = req("PATCH", "/api/admin/users/trial-1", {"title": "Owner - Master Admin"}, token=owner)
+        check("PATCH title (preexisting pick) -> 200 + stored",
+              s == 200 and b.get("user", {}).get("title") == "Owner - Master Admin", f"got {s} {b}")
+        s, b = req("PATCH", "/api/admin/users/trial-1", {"title": "Head of Growth"}, token=owner)
+        check("PATCH title (custom) -> 200 + stored",
+              s == 200 and b.get("user", {}).get("title") == "Head of Growth", f"got {s} {b}")
+        s, _ = req("PATCH", "/api/admin/users/trial-1", {"title": "x" * 81}, token=owner)
+        check("PATCH title over 80 chars -> 400", s == 400, f"got {s}")
+        s, _ = req("PATCH", "/api/admin/users/trial-1", {"title": "Owner - Master Admin"}, token=outsider)
+        check("PATCH title as non-admin -> 403", s == 403, f"got {s}")
+        s, _ = req("PATCH", "/api/admin/users/nope-404", {"title": "Manager"}, token=owner)
+        check("PATCH title for unknown user -> 404", s == 404, f"got {s}")
+        s, b = req("PATCH", "/api/admin/users/trial-1", {"title": ""}, token=owner)
+        check("PATCH title empty clears -> 200 + title absent",
+              s == 200 and "title" not in b.get("user", {}), f"got {s} {b}")
+
         # --- audit completeness -------------------------------------------------------
         entries = audit_entries(owner)
         actions = [e.get("action") for e in entries]
@@ -327,6 +344,8 @@ def main():
               has("user.delete", "temp@example.com"), f"got {actions}")
         check("audit: master_admins.update entries present",
               has("master_admins.update"), f"got {actions}")
+        check("audit: user.update entry carries title",
+              has("user.update", "trial@example.com", ("title=",)), f"got {actions}")
 
     finally:
         kill_port(PORT)

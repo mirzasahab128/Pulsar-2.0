@@ -1754,7 +1754,7 @@ app.post('/api/admin/users', requireMasterAdmin, ah(async (req, res) => {
 
 app.patch('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
   const fieldErr = validateFields(req.body, {
-    planId: 'string', role: 'string', status: 'string', displayName: 'string'
+    planId: 'string', role: 'string', status: 'string', displayName: 'string', title: 'string'
   });
   if (fieldErr) return badRequest(res, fieldErr);
   const state = getPlatformState();
@@ -1763,7 +1763,7 @@ app.patch('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
 
   const actor = actorOf(req);
   const isSelf = target.uid === actor.uid || target.email.toLowerCase() === actor.email.toLowerCase();
-  const { planId, role, status, displayName } = req.body;
+  const { planId, role, status, displayName, title } = req.body;
   const changes: string[] = [];
 
   if (planId !== undefined) {
@@ -1800,6 +1800,12 @@ app.patch('/api/admin/users/:uid', requireMasterAdmin, ah(async (req, res) => {
   if (displayName !== undefined && displayName.trim()) {
     target.displayName = displayName.trim();
     changes.push('displayName updated');
+  }
+  if (title !== undefined) {
+    const t = title.trim();
+    if (t.length > 80) return badRequest(res, 'title must be at most 80 characters');
+    if (t) { target.title = t; changes.push(`title=${t}`); }
+    else { delete target.title; changes.push('title cleared'); }
   }
   if (changes.length === 0) return badRequest(res, 'No updatable fields provided');
 
