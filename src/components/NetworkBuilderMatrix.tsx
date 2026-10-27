@@ -51,7 +51,7 @@ export const NetworkBuilderMatrix: React.FC<NetworkBuilderMatrixProps> = ({
   const [selectedNodeId, setSelectedNodeId] = useState<string>('node-1');
   const [filterType, setFilterType] = useState<string>('All');
 
-  // Network Decision-Maker Nodes
+  // Demo network data: sample contacts for layout only, not real leads or clients.
   const [nodes, setNodes] = useState<NetworkNode[]>([
     {
       id: 'node-1',
@@ -195,6 +195,7 @@ export const NetworkBuilderMatrix: React.FC<NetworkBuilderMatrixProps> = ({
 
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>Healthcare Executive Decision-Maker Web</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">Demo</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
             Visualizes multi-touch connections between Managing Physicians, Billing Supervisors, and CFOs to maximize warm transfer conversions.
@@ -219,6 +220,11 @@ export const NetworkBuilderMatrix: React.FC<NetworkBuilderMatrixProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Demo data banner: every contact in this tool is a sample example. */}
+      <div className="mt-4 p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs font-bold text-amber-700 dark:text-amber-300">
+        Demo data: the contacts in this network are sample examples for layout only. They are not real leads, clients, or verified contacts. Use NPI search to add real leads.
       </div>
 
       {/* Main Interactive Grid: Node Web Visualizer (Left 7 cols) + Decision Maker Card (Right 5 cols) */}
@@ -348,7 +354,7 @@ export const NetworkBuilderMatrix: React.FC<NetworkBuilderMatrixProps> = ({
           <div className="relative z-10 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-slate-400">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>Direct Decision Makers: {filteredNodes.length}</span>
+              <span>Demo Decision Makers: {filteredNodes.length}</span>
             </div>
             <span className="text-blue-400 font-bold">1-Click Cold Call & Sequence Capable</span>
           </div>
@@ -363,6 +369,9 @@ export const NetworkBuilderMatrix: React.FC<NetworkBuilderMatrixProps> = ({
               <div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
                   {selectedNode.relationshipType}
+                </span>
+                <span className="ml-1.5 text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black border border-amber-500/50">
+                  Demo contact
                 </span>
                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mt-2">
                   {selectedNode.name}

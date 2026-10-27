@@ -157,7 +157,7 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
     setTimeout(() => setCopiedPitch(false), 2400);
   };
 
-  // Pipeline Stages
+  // Demo pipeline data: sample deals for layout only, not real pipeline or revenue.
   const [stages, setStages] = useState<DealStage[]>([
     {
       id: 'prospecting',
@@ -222,6 +222,7 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
 
           <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>Enterprise Healthcare Deal Pipeline</span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-600 dark:text-amber-400 text-[10px] font-black uppercase tracking-wider">Demo</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
             Live revenue acceleration matrix tracking prospect progression from initial scraper hit to signed 50-claim audit agreements.
@@ -238,6 +239,11 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
             <span>View 4:00 PM PST Executive Briefing</span>
           </button>
         </div>
+      </div>
+
+      {/* Demo data banner: every deal in this tool is a sample example. */}
+      <div className="p-3 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs font-bold text-amber-700 dark:text-amber-300">
+        Demo pipeline: the deals below are sample examples for layout only. They are not real pipeline, clients, or revenue. Stage counts and values are examples.
       </div>
 
       {/* Metric Bento Cards (Skiper UI Count-Up Cards) */}
@@ -339,8 +345,11 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
                       key={lead.id}
                       className="p-2.5 rounded-xl bg-slate-950/70 border border-white/10 text-xs space-y-1.5 hover:border-emerald-500/40 transition"
                     >
-                      <div className="font-bold text-white line-clamp-1">
-                        {lead.practiceName}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-bold text-white line-clamp-1">
+                          {lead.practiceName}
+                        </div>
+                        <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-300 text-[9px] font-black uppercase tracking-wider">Demo</span>
                       </div>
                       <div className="text-[11px] text-slate-400 line-clamp-1">
                         {lead.doctorName}
@@ -375,6 +384,7 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-2">
               <Calculator className="w-3.5 h-3.5" />
               <span>Predictive Revenue ROI Engine</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/50 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-wider">Demo inputs</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
 
@@ -383,6 +393,9 @@ export const SalesBDVelocityHub: React.FC<SalesBDVelocityHubProps> = ({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-2xl">
               Model real-time cash flow acceleration by toggling claim denial overturns and accounts receivable (AR) aging reduction velocity.
+            </p>
+            <p className="text-xs font-bold text-amber-700 dark:text-amber-300 mt-1 max-w-2xl">
+              Example inputs only: the preset values below are examples for modelling. Enter your own practice numbers before using any figure with a prospect.
             </p>
           </div>
 
