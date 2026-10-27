@@ -116,7 +116,12 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
   // Time-aware greeting for the user chip (reference bar shows one).
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const firstName = settings.managerName.split(' ')[0];
+  // Header identity comes from the signed-in account, not the sales persona
+  // in settings (whose 'Sales & BD Manager' default leaked into the header).
+  // Signed out, fall back to the settings name as before.
+  const headerName = access?.displayName || settings.managerName.split(' ')[0];
+  const headerTitle = access?.title || access?.displayName || settings.managerName;
+  const headerEmail = access?.email || settings.managerEmail;
 
   // Centered pill tabs — the revenue flow, Pulsar's own modules only.
   // Any other module (via sidebar/dock) simply leaves all tabs unselected.
@@ -419,7 +424,7 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
             >
               <div className="flex flex-col text-right hidden sm:block">
                 <span className="text-xs font-bold leading-none text-[var(--pv-ink)]">
-                  {greeting}, {firstName}
+                  {greeting}, {headerName}
                 </span>
                 <span className={`text-[10px] font-mono leading-none mt-0.5 ${
                   displayIsMaster ? 'text-[var(--pv-amber)]' : 'text-[var(--pv-sky)]'
@@ -439,8 +444,8 @@ export const SpatialCommandBar: React.FC<SpatialCommandBarProps> = ({
                 isDark ? 'bg-[#121B14]/95 border-white/[0.12] text-slate-200' : 'bg-white border-slate-200 text-slate-800'
               }`}>
                 <div className="p-2 border-b border-white/[0.08] mb-1">
-                  <div className="font-bold text-xs text-[var(--pv-ink)]">{settings.managerName}</div>
-                  <div className="text-[10px] text-slate-400 truncate">{settings.managerEmail}</div>
+                  <div className="font-bold text-xs text-[var(--pv-ink)]">{headerTitle}</div>
+                  <div className="text-[10px] text-slate-400 truncate">{headerEmail}</div>
                   <div className="mt-1 text-[10px] font-mono text-[var(--pv-sky)]">
                     Role: {access ? (displayIsMaster ? 'Master Controller' : 'Customer Read-Only') : 'Server offline · roles unverified'}
                   </div>

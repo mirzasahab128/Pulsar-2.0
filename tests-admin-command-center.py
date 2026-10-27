@@ -307,6 +307,10 @@ def main():
         s, b = req("PATCH", "/api/admin/users/trial-1", {"title": "Head of Growth"}, token=owner)
         check("PATCH title (custom) -> 200 + stored",
               s == 200 and b.get("user", {}).get("title") == "Head of Growth", f"got {s} {b}")
+        s, b = req("GET", "/api/me/access", token=trial)
+        check("/api/me/access carries displayName + title for the header",
+              s == 200 and b.get("access", {}).get("title") == "Head of Growth"
+              and b.get("access", {}).get("displayName") == "Trial User", f"got {s} {b}")
         s, _ = req("PATCH", "/api/admin/users/trial-1", {"title": "x" * 81}, token=owner)
         check("PATCH title over 80 chars -> 400", s == 400, f"got {s}")
         s, _ = req("PATCH", "/api/admin/users/trial-1", {"title": "Owner - Master Admin"}, token=outsider)

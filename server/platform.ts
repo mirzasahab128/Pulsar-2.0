@@ -461,6 +461,9 @@ export function defaultPlan(state: PlatformState): Plan | null {
 export interface AccessInfo {
   uid: string;
   email: string;
+  /** Identity only, for header display. Never grants access; role and plan decide that. */
+  displayName: string | null;
+  title: string | null;
   role: PlatformRole;
   status: PlatformStatus;
   planId: string | null;
@@ -535,6 +538,8 @@ export function resolveAccess(state: PlatformState, decoded: DecodedFirebaseToke
     return {
       uid: decoded.uid,
       email: decoded.email || '',
+      displayName: record?.displayName ?? null,
+      title: record?.title ?? null,
       role: 'master_admin',
       status: 'active',
       planId: record?.planId ?? null,
@@ -551,6 +556,8 @@ export function resolveAccess(state: PlatformState, decoded: DecodedFirebaseToke
   return {
     uid: decoded.uid,
     email: decoded.email || '',
+    displayName: record?.displayName ?? null,
+    title: record?.title ?? null,
     role: record?.role ?? 'user',
     status: record?.status ?? 'active', // no record = pre-platform user (see header)
     planId: record?.planId ?? null,

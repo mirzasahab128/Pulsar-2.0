@@ -1002,6 +1002,9 @@ export async function retryStashedAccessRequest(): Promise<void> {
 export interface AccessInfo {
   uid: string;
   email: string;
+  /** Identity only, for header display. Optional so older server builds still typecheck. */
+  displayName?: string | null;
+  title?: string | null;
   role: 'master_admin' | 'admin' | 'user';
   status: 'pending_approval' | 'active' | 'disabled';
   planId: string | null;
