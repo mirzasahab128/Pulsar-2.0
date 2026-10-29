@@ -174,7 +174,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       />
 
       {/* 3. Horizontal Business-Growth KPI Strip (5 Scannable Metrics) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         
         {/* KPI 1: Prospects Discovered */}
         <div className="pv-card pv-card-hover p-5">
@@ -231,7 +231,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* KPI 5: Pipeline Added */}
-        <div className="pv-card pv-card-hover p-5 col-span-2 sm:col-span-1">
+        <div className="pv-card pv-card-hover p-5">
           <div className="flex items-center justify-between text-xs text-[var(--pv-muted)] mb-1.5 font-medium">
             <span>Pipeline Value</span>
             <span className="pv-chip pv-tint-violet" style={{ width: 32, height: 32, borderRadius: 10 }}><TrendingUp className="w-4 h-4" /></span>

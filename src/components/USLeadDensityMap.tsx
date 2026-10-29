@@ -486,7 +486,7 @@ export const USLeadDensityMap: React.FC<USLeadDensityMapProps> = ({
           <div className="relative z-10 w-full overflow-x-auto">
             <svg
               viewBox="0 0 960 560"
-              className="w-full h-auto min-w-[700px] select-none"
+              className="w-full h-auto select-none"
             style={{ filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}
           >
             <defs>

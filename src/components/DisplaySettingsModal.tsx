@@ -251,7 +251,7 @@ export const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ isOp
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => setDensity('compact')}
@@ -305,7 +305,7 @@ export const DisplaySettingsModal: React.FC<DisplaySettingsModalProps> = ({ isOp
               </span>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => setCoreWidgetMode('collapsed')}

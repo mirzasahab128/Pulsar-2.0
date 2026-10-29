@@ -343,7 +343,7 @@ export const PWAInstallModal: React.FC<PWAInstallModalProps> = ({ isOpen, onClos
           </div>
 
           {/* PWA Benefits Pill Grid */}
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
             <div className={`p-2.5 rounded-xl border ${
               isDark ? 'bg-slate-900/40 border-white/5 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-700'
             }`}>

@@ -323,7 +323,7 @@ export const SkiperRadarScanner: React.FC<SkiperRadarScannerProps> = ({
             className="w-full max-w-[340px] aspect-square rounded-full border border-emerald-500/30 shadow-[0_0_30px_rgba(16,185,129,0.15)]"
           />
 
-          <div className="mt-4 w-full grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+          <div className="mt-4 w-full grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-[10px] font-mono">
             <div className="p-2 rounded-xl bg-white/5 border border-white/5">
               <span className="text-slate-400 block">Total Radar Pings</span>
               <strong className="text-emerald-400 text-xs font-bold">128 Providers</strong>

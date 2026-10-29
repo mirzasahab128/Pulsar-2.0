@@ -724,3 +724,77 @@
   background-color: #05070a;
 }
 
+
+/* =========================================================================
+   PULSAR 2.0 RESPONSIVE LAYER (2026-10-29, responsiveness only)
+   No colour, theme, tab, page, button, or menu change. Layout only, so
+   cards, boxes, tables, and grids adjust to the viewer's screen.
+   ========================================================================= */
+
+/* Never let the page itself scroll sideways. Inner tables and maps get
+   their own sideways scroll instead (see below). */
+html,
+body {
+  overflow-x: clip;
+}
+
+.pv-shell img,
+.pv-shell video,
+.pv-shell canvas,
+.pv-shell svg {
+  max-width: 100%;
+}
+
+/* Any table that is not already inside a scrolling wrapper gets one, so
+   wide data tables scroll inside their card instead of pushing the page
+   sideways. Tables already wrapped in overflow-x-auto are untouched. */
+.pv-shell div:has(> table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.pv-shell div:has(> table) > table {
+  min-width: max-content;
+}
+
+/* Long IDs, URLs, and code lines wrap instead of overflowing a card. */
+.pv-shell p,
+.pv-shell td,
+.pv-shell th,
+.pv-shell li,
+.pv-shell pre,
+.pv-shell code {
+  overflow-wrap: anywhere;
+}
+.pv-shell pre {
+  white-space: pre-wrap;
+}
+
+/* Narrow phones: every grid that would squeeze 2, 3, or 4 columns into
+   less than 400px stacks to one column. Wider screens are untouched,
+   because these rules only apply below 400px. */
+@media (max-width: 400px) {
+  .pv-shell [class*="grid-cols-2"],
+  .pv-shell [class*="grid-cols-3"],
+  .pv-shell [class*="grid-cols-4"] {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
+/* Narrow screens: tap targets and form fields stay fully visible and
+   easy to tap, and modal panels fit inside the viewport with room to
+   scroll instead of running off the bottom edge. */
+@media (max-width: 640px) {
+  .pv-shell button {
+    min-height: 48px;
+  }
+  .pv-shell input,
+  .pv-shell select,
+  .pv-shell textarea {
+    min-height: 48px;
+  }
+  .pv-shell div.fixed.inset-0 > div {
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+}
