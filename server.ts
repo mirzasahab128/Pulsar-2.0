@@ -62,6 +62,71 @@ import {
   Sequence,
   SequenceStep
 } from './server/pipeline.js';
+import {
+  canContact,
+  grantConsent,
+  revokeContact,
+  addSuppression as addPhase71Suppression,
+  importSuppressionCsv,
+  gateAuditDetail,
+  normalizeEmail as normalizePhase71Email,
+  normalizePhone as normalizePhase71Phone,
+  type ContactChannel,
+  type ConsentType,
+  type GateContact,
+  type SuppressionReason
+} from './server/contactGate.js';
+import {
+  applyOptOut as applyPhase73OptOut,
+  formatOwnerSummary,
+  processAfterCall
+} from './server/afterCall.js';
+import type { CallOutcome } from './server/voiceAgent.js';
+import {
+  buildOwnerDashboard,
+  confirmNextStep,
+  markLeadOutcome,
+  reopenLead,
+  snoozeFollowUp,
+  unsnoozeFollowUp
+} from './server/ownerDashboard.js';
+import {
+  BILLING_PLANS,
+  canAddLead,
+  cancelSubscription,
+  createTestCheckoutSession,
+  expireTrialIfDue,
+  formatPriceCents,
+  getBillingPlan,
+  getBillingProviderConfig,
+  leadsRemaining,
+  recordLeadUse,
+  recordManualPayment,
+  renewPeriod,
+  selectPlan,
+  startTrial,
+  trialDaysRemaining,
+  type BillingPlanId
+} from './server/billing.js';
+import {
+  validateEmailAddress
+} from './server/leadVerification.js';
+import {
+  buildCompanyBrief
+} from './server/companyResearch.js';
+import {
+  addWatch as addSignalWatch,
+  classifySuppliedItem
+} from './server/signalMonitor.js';
+import {
+  PLACES_MAX_RESULTS,
+  PLACES_NOT_CONFIGURED_MESSAGE,
+  createGooglePlacesProvider,
+  dedupePlacesDrafts,
+  getPlacesApiKey,
+  searchPlacesWithProvider,
+  validatePlacesSearchInput
+} from './server/places.js';
 import crypto from 'crypto';
 import { 
   sendEmailViaResend, 
@@ -2116,6 +2181,620 @@ app.get('/api/admin/audit', requireMasterAdmin, ah(async (req, res) => {
   const limitRaw = parseInt(String(req.query.limit || '100'), 10);
   const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(1, limitRaw)) : 100;
   return res.json({ success: true, entries: state.audit.slice(0, limit) });
+}));
+
+// --- Phase 7.1: consent ledger, suppression, and contact gate ---------------
+// Master-admin only. These routes never send an email, SMS, or call;
+// the check route only evaluates the gate. National DNC note: the US
+// National DNC Registry requires paid registration and cannot be
+// queried from here, so the gate uses the internal suppression list
+// plus user-supplied CSV imports only, and never claims a live lookup.
+
+app.get('/api/admin/phase71/overview', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  return res.json({
+    success: true,
+    consents: state.phase71.consents,
+    suppressions: state.phase71.suppressions,
+    counts: {
+      consents: state.phase71.consents.length,
+      activeConsents: state.phase71.consents.filter(c => c.revokedAt === null).length,
+      suppressions: state.phase71.suppressions.length
+    },
+    nationalDnc: {
+      lookup: 'not_available',
+      note: 'The US National DNC Registry requires paid registration and cannot be queried from here. This gate uses the internal suppression list plus user-supplied CSV imports only.'
+    }
+  });
+}));
+
+app.post('/api/admin/phase71/consents', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { contactId: 'string', channel: 'string', type: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const result = grantConsent(state.phase71.consents, {
+    contactId: req.body.contactId,
+    channel: req.body.channel as ContactChannel,
+    type: req.body.type as ConsentType,
+    source: req.body.source
+  });
+  if (!result.ok) return badRequest(res, result.error);
+  writeAudit(state, actorOf(req).email, 'phase71.consent_grant', result.record.contactId,
+    `Granted ${result.record.type} for channel ${result.record.channel} from ${result.record.source}`);
+  persistPlatform();
+  return res.status(201).json({ success: true, consent: result.record });
+}));
+
+app.post('/api/admin/phase71/consents/revoke', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { contactId: 'string', source: 'string', email: 'string', phone: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const contactId = String(req.body.contactId || '').trim();
+  if (!contactId) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  const state = getPlatformState();
+  const { revoked } = revokeContact(state.phase71.consents, contactId, req.body.source || 'revocation');
+  // Revocation suppresses all channels: add suppression records for the
+  // contact id and, when supplied, its email and phone.
+  const added: string[] = [];
+  const addSupp = (type: 'contact' | 'email' | 'phone', identifier: string) => {
+    const r = addPhase71Suppression(state.phase71.suppressions, {
+      identifierType: type, identifier, reason: 'opt_out', source: req.body.source || 'revocation', addedBy: actorOf(req).email
+    });
+    if (r.ok && !r.duplicate) added.push(`${type}:${r.record.identifier}`);
+  };
+  addSupp('contact', contactId);
+  if (req.body.email) addSupp('email', req.body.email);
+  if (req.body.phone) addSupp('phone', req.body.phone);
+  writeAudit(state, actorOf(req).email, 'phase71.consent_revoke', contactId,
+    `Revoked ${revoked} consent record(s); suppression added: ${added.join(', ') || 'none new'}`);
+  persistPlatform();
+  return res.json({ success: true, revoked, suppressionsAdded: added });
+}));
+
+app.post('/api/admin/phase71/suppressions', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { identifierType: 'string', identifier: 'string', reason: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const result = addPhase71Suppression(state.phase71.suppressions, {
+    identifierType: req.body.identifierType,
+    identifier: req.body.identifier,
+    reason: (req.body.reason || 'manual') as SuppressionReason,
+    source: req.body.source || 'manual',
+    addedBy: actorOf(req).email
+  });
+  if (!result.ok) return badRequest(res, result.error);
+  writeAudit(state, actorOf(req).email, 'phase71.suppression_add', result.record.identifier,
+    `Added ${result.record.identifierType} suppression (${result.record.reason})${result.duplicate ? ' (already listed)' : ''}`);
+  persistPlatform();
+  return res.status(201).json({ success: true, suppression: result.record, duplicate: result.duplicate });
+}));
+
+app.delete('/api/admin/phase71/suppressions/:id', requireMasterAdmin, ah(async (req, res) => {
+  const state = getPlatformState();
+  const target = state.phase71.suppressions.find(s => s.id === req.params.id);
+  if (!target) return res.status(404).json({ success: false, error: 'Suppression not found' });
+  state.phase71.suppressions = state.phase71.suppressions.filter(s => s.id !== target.id);
+  writeAudit(state, actorOf(req).email, 'phase71.suppression_remove', target.identifier,
+    `Removed ${target.identifierType} suppression (${target.reason})`);
+  persistPlatform();
+  return res.json({ success: true, removed: target });
+}));
+
+app.post('/api/admin/phase71/suppressions/import', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { csv: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const parsed = importSuppressionCsv(req.body.csv || '', { source: req.body.source || 'dnc_import', addedBy: actorOf(req).email });
+  let added = 0;
+  let duplicates = 0;
+  for (const phone of parsed.added) {
+    const r = addPhase71Suppression(state.phase71.suppressions, {
+      identifierType: 'phone', identifier: phone, reason: 'dnc_import', source: req.body.source || 'dnc_import', addedBy: actorOf(req).email
+    });
+    if (r.ok && !r.duplicate) added++; else duplicates++;
+  }
+  for (const phone of parsed.skipped) duplicates++;
+  writeAudit(state, actorOf(req).email, 'phase71.suppression_import', 'internal suppression list',
+    `Imported ${added} phone numbers, ${duplicates} duplicates skipped, ${parsed.errors.length} invalid lines. This is an internal list import, not a live National DNC lookup.`);
+  persistPlatform();
+  return res.json({ success: true, added, duplicates, errors: parsed.errors });
+}));
+
+app.post('/api/admin/phase71/check', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { channel: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const channel = req.body.channel as ContactChannel;
+  if (!['email', 'voice', 'sms'].includes(channel)) return badRequest(res, 'channel must be email, voice, or sms');
+  const raw = req.body.contact || {};
+  const contact: GateContact = {
+    id: String(raw.id || '').trim(),
+    email: normalizePhase71Email(raw.email) || null,
+    phone: normalizePhase71Phone(raw.phone) || null,
+    phoneLineType: ['mobile', 'landline', 'unknown'].includes(raw.phoneLineType) ? raw.phoneLineType : 'unknown',
+    fieldVerifications: Array.isArray(raw.fieldVerifications) ? raw.fieldVerifications.filter((v: any) =>
+      v && ['email', 'phone', 'business', 'identity'].includes(v.field) && typeof v.verified === 'boolean'
+        && typeof v.provenance === 'string' && typeof v.verifiedAt === 'string') : []
+  };
+  if (!contact.id) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  const state = getPlatformState();
+  const verdict = canContact(contact, channel, { consents: state.phase71.consents, suppressions: state.phase71.suppressions });
+  writeAudit(state, actorOf(req).email, 'phase71.gate_check', contact.id, gateAuditDetail(contact, verdict));
+  persistPlatform();
+  return res.json({ success: true, verdict });
+}));
+
+// --- Phase 7.3: after-call automation -------------------------------------
+// Master-admin only. These routes never send an email, SMS, or call:
+// processAfterCall produces drafts only (status draft, sent false),
+// and the opt-out route cancels follow-ups and suppresses the lead.
+// No outcome, result, or ROI figure is invented here: stage, task,
+// draft, and owner summary all come from the call note and brief the
+// caller passes in.
+app.get('/api/admin/phase73/overview', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  return res.json({
+    success: true,
+    pipeline: state.phase73.pipeline,
+    tasks: state.phase73.tasks,
+    drafts: state.phase73.drafts,
+    ownerSummaries: state.phase73.ownerSummaries,
+    counts: {
+      pipelineLeads: Object.keys(state.phase73.pipeline).length,
+      pendingTasks: state.phase73.tasks.filter(t => t.status === 'pending').length,
+      drafts: state.phase73.drafts.length,
+      ownerSummaries: state.phase73.ownerSummaries.length
+    }
+  });
+}));
+
+app.post('/api/admin/phase73/after-call', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { note: 'object', brief: 'object' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const rawNote = req.body.note || {};
+  const rawBrief = req.body.brief || {};
+  const outcome = rawNote.outcome as CallOutcome;
+  if (!['blocked', 'transferred', 'callback_booked', 'email_requested', 'not_interested', 'ended'].includes(outcome)) {
+    return badRequest(res, 'note.outcome must be a Phase 7.2 call outcome');
+  }
+  const contactId = String(rawNote.contactId || '').trim();
+  if (!contactId) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  const state = getPlatformState();
+  const result = processAfterCall({
+    note: {
+      contactId,
+      outcome,
+      nextStep: String(rawNote.nextStep || ''),
+      transferSummary: rawNote.transferSummary || null,
+      callbackAt: rawNote.callbackAt || null,
+      agreed: rawNote.agreed || null
+    },
+    brief: {
+      contactName: String(rawBrief.contactName || ''),
+      businessName: String(rawBrief.businessName || ''),
+      callingCompany: String(rawBrief.callingCompany || ''),
+      painPoint: String(rawBrief.painPoint || ''),
+      proofOffer: String(rawBrief.proofOffer || ''),
+      ownerName: String(rawBrief.ownerName || '')
+    },
+    suppressions: state.phase71.suppressions,
+    existingTasks: state.phase73.tasks
+  });
+  state.phase73.pipeline[contactId] = result.stage;
+  state.phase73.tasks.push(...result.tasks);
+  state.phase73.drafts.push(...result.drafts);
+  if (result.ownerSummary) {
+    state.phase73.ownerSummaries = state.phase73.ownerSummaries.filter(s => s.contactId !== contactId);
+    state.phase73.ownerSummaries.push(result.ownerSummary);
+  }
+  if (result.suppressed) {
+    // Universal suppression: an opt-out outcome also suppresses the
+    // contact in the Phase 7.1 ledger, so future gate checks block.
+    const added = addPhase71Suppression(state.phase71.suppressions, {
+      identifierType: 'contact', identifier: contactId, reason: 'opt_out', source: 'phase73 after-call', addedBy: actorOf(req).email
+    });
+    void added;
+  }
+  for (const event of result.auditEvents) {
+    writeAudit(state, actorOf(req).email, 'phase73.after_call', contactId, event);
+  }
+  persistPlatform();
+  return res.json({
+    success: true,
+    stage: result.stage,
+    tasks: result.tasks,
+    drafts: result.drafts,
+    ownerSummary: result.ownerSummary,
+    ownerSummaryText: result.ownerSummary ? formatOwnerSummary(result.ownerSummary) : null,
+    suppressed: result.suppressed,
+    followUpsCancelled: result.followUpsCancelled
+  });
+}));
+
+app.post('/api/admin/phase73/opt-out', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { contactId: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const contactId = String(req.body.contactId || '').trim();
+  if (!contactId) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  const state = getPlatformState();
+  const result = applyPhase73OptOut({ contactId, source: req.body.source || 'opt-out', existingTasks: state.phase73.tasks });
+  state.phase73.pipeline[contactId] = 'opted_out';
+  revokeContact(state.phase71.consents, contactId, req.body.source || 'opt-out');
+  addPhase71Suppression(state.phase71.suppressions, {
+    identifierType: 'contact', identifier: contactId, reason: 'opt_out', source: req.body.source || 'opt-out', addedBy: actorOf(req).email
+  });
+  writeAudit(state, actorOf(req).email, 'phase73.opt_out', contactId, result.auditEvent);
+  persistPlatform();
+  return res.json({ success: true, stage: result.stage, followUpsCancelled: result.followUpsCancelled });
+}));
+
+// --- Phase 7.4: owner dashboard ----------------------------------------
+// Master-admin only. These routes never send an email, SMS, or call,
+// never change consent or gate state, and never invent a value: they
+// read the Phase 7.3 pipeline and apply reversible owner actions
+// (won, lost, reopen, snooze, unsnooze, confirm next step), each
+// written to the audit log and to the Phase 7.4 action log.
+app.get('/api/admin/phase74/dashboard', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  const view = buildOwnerDashboard({
+    pipeline: state.phase73.pipeline,
+    tasks: state.phase73.tasks,
+    drafts: state.phase73.drafts,
+    ownerSummaries: state.phase73.ownerSummaries
+  });
+  return res.json({ success: true, ...view, actions: state.phase74.actions.slice(-100) });
+}));
+
+app.post('/api/admin/phase74/outcome', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { contactId: 'string', outcome: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const contactId = String(req.body.contactId || '').trim();
+  const outcome = String(req.body.outcome || '').trim();
+  if (!contactId) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  if (outcome !== 'closed_won' && outcome !== 'closed_lost') return badRequest(res, 'outcome must be closed_won or closed_lost');
+  const state = getPlatformState();
+  const result = markLeadOutcome({
+    pipeline: state.phase73.pipeline,
+    tasks: state.phase73.tasks,
+    contactId,
+    outcome: outcome as 'closed_won' | 'closed_lost',
+    reason: String(req.body.reason || '')
+  });
+  state.phase74.actions.push(result.action);
+  writeAudit(state, actorOf(req).email, 'phase74.outcome', contactId, result.auditEvent);
+  persistPlatform();
+  return res.json({ success: true, stage: result.stage, followUpsCancelled: result.followUpsCancelled, action: result.action });
+}));
+
+app.post('/api/admin/phase74/reopen', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { actionId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const action = state.phase74.actions.find(a => a.id === String(req.body.actionId));
+  if (!action) return badRequest(res, 'ACTION_NOT_FOUND');
+  const result = reopenLead({ pipeline: state.phase73.pipeline, tasks: state.phase73.tasks, action });
+  if (!result.restored) return badRequest(res, 'ACTION_NOT_REVERSIBLE');
+  if (result.reversal) state.phase74.actions.push(result.reversal);
+  writeAudit(state, actorOf(req).email, 'phase74.reopen', action.contactId, `reopened action=${action.id} restored_stage=${result.stage} tasks_restored=${result.tasksRestored}`);
+  persistPlatform();
+  return res.json({ success: true, restored: true, stage: result.stage, tasksRestored: result.tasksRestored });
+}));
+
+app.post('/api/admin/phase74/snooze', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { taskId: 'string', dueAt: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const result = snoozeFollowUp({
+    tasks: state.phase73.tasks,
+    taskId: String(req.body.taskId),
+    newDueAt: String(req.body.dueAt),
+    reason: String(req.body.reason || '')
+  });
+  if (!result.snoozed || !result.action) return badRequest(res, 'TASK_NOT_PENDING');
+  state.phase74.actions.push(result.action);
+  writeAudit(state, actorOf(req).email, 'phase74.snooze', result.action.contactId, `snoozed task=${result.action.taskId} new_due=${result.action.newDueAt}`);
+  persistPlatform();
+  return res.json({ success: true, snoozed: true, action: result.action });
+}));
+
+app.post('/api/admin/phase74/unsnooze', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { actionId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const action = state.phase74.actions.find(a => a.id === String(req.body.actionId));
+  if (!action) return badRequest(res, 'ACTION_NOT_FOUND');
+  const result = unsnoozeFollowUp({ tasks: state.phase73.tasks, action });
+  if (!result.restored || !result.reversal) return badRequest(res, 'ACTION_NOT_REVERSIBLE');
+  state.phase74.actions.push(result.reversal);
+  writeAudit(state, actorOf(req).email, 'phase74.unsnooze', action.contactId, `unsnoozed task=${action.taskId}`);
+  persistPlatform();
+  return res.json({ success: true, restored: true });
+}));
+
+app.post('/api/admin/phase74/next-step', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { contactId: 'string', nextStep: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const contactId = String(req.body.contactId || '').trim();
+  if (!contactId) return badRequest(res, 'CONTACT_ID_REQUIRED');
+  const state = getPlatformState();
+  const result = confirmNextStep({
+    ownerSummaries: state.phase73.ownerSummaries,
+    contactId,
+    nextStep: String(req.body.nextStep || ''),
+    reason: String(req.body.reason || '')
+  });
+  if (!result.confirmed || !result.action) return badRequest(res, 'NO_OWNER_SUMMARY');
+  state.phase74.actions.push(result.action);
+  writeAudit(state, actorOf(req).email, 'phase74.next_step', contactId, `next_step=${result.action.newNextAction}`);
+  persistPlatform();
+  return res.json({ success: true, confirmed: true, action: result.action });
+}));
+
+// --- Billing: checkout and billing, TEST MODE ONLY ------------------------
+// Master-admin only. Nothing here charges a card, stores a card number,
+// or calls a payment provider. The provider config returns only variable
+// names and a configured flag, never a key value. A live checkout flow,
+// webhook handling, and a live test payment are still required before
+// any customer can pay.
+app.get('/api/admin/billing/overview', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  const now = new Date();
+  const subscriptions = Object.values(state.billing.subscriptions).map((sub) => {
+    const plan = getBillingPlan(sub.planId);
+    return {
+      ...expireTrialIfDue(sub, now),
+      planName: plan ? plan.name : sub.planId,
+      priceCentsPerMonth: plan ? plan.priceCentsPerMonth : 0,
+      leadsRemaining: leadsRemaining(sub),
+      trialDaysRemaining: trialDaysRemaining(sub, now),
+    };
+  });
+  return res.json({
+    success: true,
+    testMode: true,
+    liveCharging: false,
+    plans: BILLING_PLANS.map((plan) => ({ ...plan, price: formatPriceCents(plan.priceCentsPerMonth) })),
+    provider: getBillingProviderConfig(),
+    subscriptions,
+  });
+}));
+
+app.post('/api/admin/billing/trial', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string', planId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const planId = String(req.body.planId || '').trim() as BillingPlanId;
+  if (!workspaceId) return badRequest(res, 'WORKSPACE_ID_REQUIRED');
+  if (!getBillingPlan(planId)) return badRequest(res, 'UNKNOWN_PLAN');
+  const state = getPlatformState();
+  const sub = startTrial(workspaceId, planId);
+  state.billing.subscriptions[workspaceId] = sub;
+  writeAudit(state, actorOf(req).email, 'billing.trial_started', workspaceId, `trial plan=${planId} 14 days, test mode, no charge`);
+  persistPlatform();
+  return res.status(201).json({ success: true, subscription: sub, trialDaysRemaining: trialDaysRemaining(sub) });
+}));
+
+app.post('/api/admin/billing/select-plan', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string', planId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const planId = String(req.body.planId || '').trim() as BillingPlanId;
+  const state = getPlatformState();
+  const sub = state.billing.subscriptions[workspaceId];
+  if (!sub) return badRequest(res, 'SUBSCRIPTION_NOT_FOUND');
+  const result = selectPlan(sub, planId);
+  if (!result.ok) return badRequest(res, result.error || 'PLAN_CHANGE_FAILED');
+  state.billing.subscriptions[workspaceId] = result.subscription;
+  writeAudit(state, actorOf(req).email, 'billing.plan_selected', workspaceId, `plan=${planId} pending=${result.subscription.pendingPlanId || 'none'}`);
+  persistPlatform();
+  return res.json({ success: true, subscription: result.subscription });
+}));
+
+app.post('/api/admin/billing/renew', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const state = getPlatformState();
+  const sub = state.billing.subscriptions[workspaceId];
+  if (!sub) return badRequest(res, 'SUBSCRIPTION_NOT_FOUND');
+  const expired = expireTrialIfDue(sub, new Date());
+  const renewed = expired.status === 'trial_expired' ? expired : renewPeriod(expired, new Date());
+  state.billing.subscriptions[workspaceId] = renewed;
+  writeAudit(state, actorOf(req).email, 'billing.renewed', workspaceId, `status=${renewed.status} plan=${renewed.planId}`);
+  persistPlatform();
+  return res.json({ success: true, subscription: renewed });
+}));
+
+app.post('/api/admin/billing/cancel', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string', stopFollowUpsOnCancel: 'boolean' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const state = getPlatformState();
+  const sub = state.billing.subscriptions[workspaceId];
+  if (!sub) return badRequest(res, 'SUBSCRIPTION_NOT_FOUND');
+  const cancelled = cancelSubscription(sub, { stopFollowUpsOnCancel: req.body.stopFollowUpsOnCancel === true });
+  state.billing.subscriptions[workspaceId] = cancelled;
+  writeAudit(state, actorOf(req).email, 'billing.cancelled', workspaceId, `cancel_at_period_end=true stop_follow_ups=${cancelled.stopFollowUpsOnCancel}`);
+  persistPlatform();
+  return res.json({ success: true, subscription: cancelled });
+}));
+
+app.post('/api/admin/billing/manual-payment', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string', amountCents: 'number', note: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const state = getPlatformState();
+  const sub = state.billing.subscriptions[workspaceId];
+  if (!sub) return badRequest(res, 'SUBSCRIPTION_NOT_FOUND');
+  const result = recordManualPayment(sub, {
+    amountCents: req.body.amountCents,
+    paidAt: String(req.body.paidAt || new Date().toISOString()),
+    recordedBy: actorOf(req).email,
+    note: String(req.body.note || ''),
+  });
+  if (!result.ok) return badRequest(res, result.error || 'MANUAL_PAYMENT_FAILED');
+  state.billing.subscriptions[workspaceId] = result.subscription;
+  writeAudit(state, actorOf(req).email, 'billing.manual_payment', workspaceId, `manual payment amount_cents=${req.body.amountCents} plan=${sub.planId} note=${String(req.body.note || '')}`);
+  persistPlatform();
+  return res.json({ success: true, subscription: result.subscription });
+}));
+
+app.post('/api/admin/billing/lead-use', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const state = getPlatformState();
+  const sub = state.billing.subscriptions[workspaceId];
+  if (!sub) return badRequest(res, 'SUBSCRIPTION_NOT_FOUND');
+  const result = recordLeadUse(sub, new Date());
+  if (!result.ok) return badRequest(res, result.error || 'LEAD_CAP_OR_ACCESS');
+  state.billing.subscriptions[workspaceId] = result.subscription;
+  persistPlatform();
+  return res.json({ success: true, subscription: result.subscription, leadsRemaining: leadsRemaining(result.subscription), canAddLead: canAddLead(result.subscription) });
+}));
+
+app.post('/api/admin/billing/test-checkout', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { workspaceId: 'string', planId: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const workspaceId = String(req.body.workspaceId || '').trim();
+  const planId = String(req.body.planId || '').trim() as BillingPlanId;
+  if (!workspaceId) return badRequest(res, 'WORKSPACE_ID_REQUIRED');
+  if (!getBillingPlan(planId)) return badRequest(res, 'UNKNOWN_PLAN');
+  return res.json({ success: true, testMode: true, charged: false, session: createTestCheckoutSession(workspaceId, planId) });
+}));
+
+// --- Lead prep: email shape check, company brief, signal monitor -------------
+// Master-admin only. Read-only preparation: nothing here sends, calls,
+// fetches a page, or authorises contact. Email results are shape checks
+// only, company briefs come from user-supplied text only, and signals
+// come from supplied items only. The Phase 7 consent gate still decides
+// every contact, and an opt-out stops all channels at once.
+app.get('/api/admin/lead-prep/overview', requireMasterAdmin, ah(async (_req, res) => {
+  const state = getPlatformState();
+  return res.json({
+    success: true,
+    liveVerification: false,
+    liveFetch: false,
+    emailChecks: state.leadPrep.emailChecks.slice(-50),
+    companyBriefs: state.leadPrep.companyBriefs.slice(-50),
+    watches: state.leadPrep.watches,
+    signals: state.leadPrep.signals.slice(-100),
+    placesDrafts: state.leadPrep.placesDrafts.slice(-100),
+    placesKeyConfigured: getPlacesApiKey() !== null,
+    counts: {
+      emailChecks: state.leadPrep.emailChecks.length,
+      companyBriefs: state.leadPrep.companyBriefs.length,
+      watches: state.leadPrep.watches.length,
+      signals: state.leadPrep.signals.length,
+      placesDrafts: state.leadPrep.placesDrafts.length
+    }
+  });
+}));
+
+app.post('/api/admin/lead-prep/email-check', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { email: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const result = validateEmailAddress({ email: String(req.body.email || ''), contactId: req.body.contactId || null });
+  state.leadPrep.emailChecks.push(result);
+  writeAudit(state, actorOf(req).email, 'leadprep.email_check', result.email, `verdict=${result.verdict} shape only, no live check`);
+  persistPlatform();
+  return res.status(201).json({ success: true, result });
+}));
+
+app.post('/api/admin/lead-prep/company-brief', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { companyName: 'string', pageText: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const brief = buildCompanyBrief({
+    companyName: String(req.body.companyName || ''),
+    pageText: String(req.body.pageText || ''),
+    source: String(req.body.source || ''),
+    sourceUrl: req.body.sourceUrl || null,
+    suppliedBy: actorOf(req).email
+  });
+  state.leadPrep.companyBriefs.push(brief);
+  writeAudit(state, actorOf(req).email, 'leadprep.company_brief', brief.companyName, 'brief from supplied text only, nothing fetched');
+  persistPlatform();
+  return res.status(201).json({ success: true, brief });
+}));
+
+app.post('/api/admin/lead-prep/watch', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { kind: 'string', label: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const result = addSignalWatch(state.leadPrep.watches, {
+    kind: req.body.kind,
+    label: String(req.body.label || ''),
+    source: String(req.body.source || ''),
+    addedBy: actorOf(req).email
+  });
+  if (!result.ok) return badRequest(res, result.error);
+  writeAudit(state, actorOf(req).email, 'leadprep.watch_add', result.watch.label, `kind=${result.watch.kind}`);
+  persistPlatform();
+  return res.status(201).json({ success: true, watch: result.watch });
+}));
+
+app.post('/api/admin/lead-prep/signal', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { watchId: 'string', title: 'string', body: 'string', source: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const state = getPlatformState();
+  const watch = state.leadPrep.watches.find(w => w.id === req.body.watchId);
+  if (!watch) return badRequest(res, 'WATCH_NOT_FOUND');
+  const signal = classifySuppliedItem({
+    watchId: String(req.body.watchId),
+    title: String(req.body.title || ''),
+    body: String(req.body.body || ''),
+    publishedAt: req.body.publishedAt || null,
+    source: String(req.body.source || '')
+  });
+  state.leadPrep.signals.push(signal);
+  writeAudit(state, actorOf(req).email, 'leadprep.signal', signal.title, `kind=${signal.kind} contact_authorised=false`);
+  persistPlatform();
+  return res.status(201).json({ success: true, signal });
+}));
+
+// Google Places search, master-admin only, server side only. The key is
+// read from the server environment and sent only in the Places header.
+// It is never logged, never stored, and never sent to the browser. A
+// draft is preparation only: not a verified contact, and it never
+// authorises contact. The verification step and the Phase 7 consent
+// gate must still pass first, and an opt-out stops all channels.
+app.post('/api/admin/lead-prep/places-search', requireMasterAdmin, ah(async (req, res) => {
+  const fieldErr = validateFields(req.body, { industry: 'string', place: 'string' });
+  if (fieldErr) return badRequest(res, fieldErr);
+  const industry = String(req.body.industry || '');
+  const place = String(req.body.place || '');
+  const validation = validatePlacesSearchInput({ industry, place });
+  if (validation) return badRequest(res, validation);
+  const apiKey = getPlacesApiKey();
+  if (!apiKey) {
+    return res.status(503).json({ success: false, livePlaces: false, error: PLACES_NOT_CONFIGURED_MESSAGE });
+  }
+  const state = getPlatformState();
+  let provider;
+  try {
+    provider = createGooglePlacesProvider(apiKey);
+  } catch (e: any) {
+    return res.status(503).json({ success: false, livePlaces: false, error: e?.message || PLACES_NOT_CONFIGURED_MESSAGE });
+  }
+  let result;
+  try {
+    result = await searchPlacesWithProvider(provider, { industry, place });
+  } catch (e: any) {
+    return res.status(502).json({ success: false, livePlaces: false, error: e?.message || 'Google Places search failed' });
+  }
+  const merged = dedupePlacesDrafts([...state.leadPrep.placesDrafts, ...result.drafts]);
+  const newlyStored = merged.drafts.length - state.leadPrep.placesDrafts.length;
+  state.leadPrep.placesDrafts = merged.drafts;
+  writeAudit(state, actorOf(req).email, 'leadprep.places_search', `${industry.trim()} in ${place.trim()}`, `drafts=${result.drafts.length} newly_stored=${newlyStored} cap=${PLACES_MAX_RESULTS} live=true`);
+  persistPlatform();
+  return res.json({
+    success: true,
+    livePlaces: true,
+    drafts: result.drafts,
+    totalReturned: result.totalReturned,
+    duplicatesRemoved: result.duplicatesRemoved,
+    cappedAt: result.cappedAt
+  });
 }));
 
 // --- Dashboard: snapshot sync + stats (prompt Part 2) --------------------------

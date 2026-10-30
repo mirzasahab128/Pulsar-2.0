@@ -28,6 +28,14 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { loadStore, saveStore } from './serverStore.js';
 import { OWNER_EMAILS, DecodedFirebaseToken } from './security.js';
+import type { ConsentRecord, SuppressionRecord } from './contactGate.js';
+import type { DraftMessage, FollowUpTask, OwnerSummary, PipelineStage } from './afterCall.js';
+import type { OwnerAction } from './ownerDashboard.js';
+import type { BillingSubscription } from './billing.js';
+import type { EmailCheckResult } from './leadVerification.js';
+import type { CompanyBrief } from './companyResearch.js';
+import type { WatchlistItem, Signal } from './signalMonitor.js';
+import type { PlacesLeadDraft } from './places.js';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -177,6 +185,50 @@ export interface WorkspaceSnapshot {
   tasks: SnapshotTask[];
 }
 
+/** Phase 7.1: consent ledger and internal suppression list. The live
+ *  National DNC Registry is never queried from here (it requires paid
+ *  registration); this list holds internal suppressions plus any
+ *  user-supplied DNC list imported as CSV. */
+export interface Phase71State {
+  consents: ConsentRecord[];
+  suppressions: SuppressionRecord[];
+}
+
+/** Phase 7.3: after-call pipeline, follow-up tasks, drafts (never sent
+ *  by the server), and owner handoff summaries. Drafts are stored only
+ *  as drafts; no route in this file sends them. */
+export interface Phase73State {
+  pipeline: Record<string, PipelineStage>;
+  tasks: FollowUpTask[];
+  drafts: DraftMessage[];
+  ownerSummaries: OwnerSummary[];
+}
+
+/** Phase 7.4: owner dashboard action log. Actions are reversible and
+ *  logged; the log itself never sends, calls, or changes consent. */
+export interface Phase74State {
+  actions: OwnerAction[];
+}
+
+/** Billing: one subscription per workspace. Test mode only. No card
+ *  details are stored anywhere in this state. Ported from 3.0. */
+export interface BillingState {
+  subscriptions: Record<string, BillingSubscription>;
+}
+
+/** Lead prep: read-only preparation, never permission. Email checks
+ *  are shape checks only, company briefs come from user-supplied
+ *  text only, and signals come from supplied items only. None of
+ *  these authorise contact; the Phase 7 consent gate still decides. */
+export interface LeadPrepState {
+  emailChecks: EmailCheckResult[];
+  companyBriefs: CompanyBrief[];
+  watches: WatchlistItem[];
+  signals: Signal[];
+  /** Google Places drafts. Preparation only, never a verified contact. */
+  placesDrafts: PlacesLeadDraft[];
+}
+
 export interface PlatformState {
   users: Record<string, PlatformUser>;
   plans: Record<string, Plan>;
@@ -185,6 +237,11 @@ export interface PlatformState {
   usage: Record<string, UsageCounters>;
   snapshots: Record<string, WorkspaceSnapshot>;
   deletedUsers: DeletedUserTombstone[];
+  phase71: Phase71State;
+  phase73: Phase73State;
+  phase74: Phase74State;
+  billing: BillingState;
+  leadPrep: LeadPrepState;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +291,12 @@ export function emptyPlatformState(): PlatformState {
     audit: [],
     usage: {},
     snapshots: {},
-    deletedUsers: []
+    deletedUsers: [],
+    phase71: { consents: [], suppressions: [] },
+    phase73: { pipeline: {}, tasks: [], drafts: [], ownerSummaries: [] },
+    phase74: { actions: [] },
+    billing: { subscriptions: {} },
+    leadPrep: { emailChecks: [], companyBriefs: [], watches: [], signals: [], placesDrafts: [] }
   };
 }
 
@@ -253,6 +315,32 @@ export function getPlatformState(): PlatformState {
   // Migration: states persisted before the Admin Command Center have no
   // tombstone list.
   if (!Array.isArray(state.deletedUsers)) state.deletedUsers = [];
+  // Migration: states persisted before Phase 7.1 have no consent ledger.
+  if (!state.phase71 || !Array.isArray(state.phase71.consents) || !Array.isArray(state.phase71.suppressions)) {
+    state.phase71 = { consents: [], suppressions: [] };
+  }
+  // Migration: states persisted before Phase 7.3 have no after-call state.
+  if (!state.phase73 || typeof state.phase73.pipeline !== 'object' || !Array.isArray(state.phase73.tasks)
+    || !Array.isArray(state.phase73.drafts) || !Array.isArray(state.phase73.ownerSummaries)) {
+    state.phase73 = { pipeline: {}, tasks: [], drafts: [], ownerSummaries: [] };
+  }
+  // Migration: states persisted before Phase 7.4 have no owner action log.
+  if (!state.phase74 || !Array.isArray(state.phase74.actions)) {
+    state.phase74 = { actions: [] };
+  }
+  // Migration: states persisted before billing have no billing state.
+  if (!state.billing || typeof state.billing.subscriptions !== 'object') {
+    state.billing = { subscriptions: {} };
+  }
+  // Migration: states persisted before lead prep have no lead prep state.
+  if (!state.leadPrep || !Array.isArray(state.leadPrep.emailChecks) || !Array.isArray(state.leadPrep.companyBriefs)
+    || !Array.isArray(state.leadPrep.watches) || !Array.isArray(state.leadPrep.signals)) {
+    state.leadPrep = { emailChecks: [], companyBriefs: [], watches: [], signals: [], placesDrafts: [] };
+  }
+  // Migration: states persisted before Places have no places drafts list.
+  if (!Array.isArray((state.leadPrep as LeadPrepState).placesDrafts)) {
+    (state.leadPrep as LeadPrepState).placesDrafts = [];
+  }
   return state;
 }
 
